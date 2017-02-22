@@ -1,0 +1,48 @@
+{
+  "name": "ng2-http-auth",
+  "version": "1.0.0",
+  "description": "Http module with authentication functionality",
+  "repository": "https://github.com/serhiisol/ng2-http-auth",
+  "keywords": [
+    "angular2",
+    "components",
+    "typescript",
+    "http",
+    "authentication"
+  ],
+  "author": "Serhii Sol",
+  "license": "MIT",
+  "dependencies": {
+    "@angular/core": "2.4.8",
+    "@angular/http": "2.4.8",
+    "@angular/router": "3.4.8",
+    "core-js": "2.4.1",
+    "rxjs": "5.2.0",
+    "zone.js": "0.7.7"
+  },
+  "devDependencies": {
+    "@angular/common": "2.4.8",
+    "@angular/compiler": "2.4.8",
+    "@angular/platform-browser": "^2.4.8",
+    "@angular/platform-browser-dynamic": "2.4.8",
+    "@types/jasmine": "2.5.43",
+    "@types/node": "7.0.5",
+    "awesome-typescript-loader": "3.0.7",
+    "jasmine-core": "2.5.2",
+    "karma": "1.5.0",
+    "karma-jasmine": "1.1.0",
+    "karma-phantomjs-launcher": "1.0.2",
+    "karma-sourcemap-loader": "0.3.7",
+    "karma-spec-reporter": "0.0.26",
+    "karma-webpack": "2.0.2",
+    "reflect-metadata": "0.1.10",
+    "tslint": "4.4.2",
+    "webpack": "2.2.1",
+    "webpack-dev-server": "2.4.1",
+    "typescript": "2.2.1"
+  },
+  "scripts": {
+    "lint": "tslint --project=tsconfig.json",
+    "test": "karma start karma.conf.js"
+  }
+}

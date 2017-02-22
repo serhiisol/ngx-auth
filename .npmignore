@@ -1,0 +1,9 @@
+.editorconfig
+tsconfig.json
+
+karma.conf.js
+test.ts
+tsconfig.json
+tslint.json
+
+**/*.spec.ts
