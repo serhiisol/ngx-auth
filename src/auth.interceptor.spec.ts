@@ -2,13 +2,7 @@ import { TestBed, inject, async, fakeAsync, tick } from '@angular/core/testing';
 import { Request, Response, ResponseOptions, Headers } from '@angular/http';
 import { MockBackend, MockConnection } from '@angular/http/testing';
 import { Observable } from 'rxjs/Observable';
-
-import {
-  MockHttpModule,
-  Http,
-  RequestInterceptorOptions,
-  ResponseInterceptorOptions
-} from '../http';
+import { MockHttpModule, Http, RequestInterceptorOptions, ResponseInterceptorOptions } from 'ng4-http';
 
 import { AuthService } from './auth.service';
 import { AUTH_SERVICE } from './tokens';

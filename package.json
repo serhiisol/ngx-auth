@@ -1,9 +1,9 @@
 {
   "name": "ng4-auth",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Angular2/4 Authentication module",
   "repository": "https://github.com/serhiisol/ng4-auth",
-  "main": "src/index.ts",
+  "main": "lib/index.js",
   "keywords": [
     "angular2",
     "angular4",
@@ -13,16 +13,19 @@
   ],
   "author": "Serhii Sol",
   "license": "MIT",
-  "dependencies": {
+  "peerDependencies": {
     "@angular/core": "2.4.8",
     "@angular/http": "2.4.8",
     "@angular/router": "3.4.8",
-    "core-js": "2.4.1",
-    "rxjs": "5.2.0",
-    "zone.js": "0.7.7",
-    "ng4-http": "1.0.0"
+    "ng4-http": "1.0.2",
+    "rxjs": "5.2.0"
   },
   "devDependencies": {
+    "@angular/core": "2.4.8",
+    "@angular/http": "2.4.8",
+    "@angular/router": "3.4.8",
+    "ng4-http": "1.0.2",
+    "rxjs": "5.2.0",
     "@angular/common": "2.4.8",
     "@angular/compiler": "2.4.8",
     "@angular/platform-browser": "^2.4.8",
@@ -41,7 +44,8 @@
     "tslint": "4.4.2",
     "webpack": "2.2.1",
     "webpack-dev-server": "2.4.1",
-    "typescript": "2.2.1"
+    "typescript": "2.2.1",
+    "zone.js": "0.7.7"
   },
   "scripts": {
     "lint": "tslint --project=tsconfig.json",

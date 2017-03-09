@@ -4,13 +4,7 @@ import { Observable } from 'rxjs/Observable';
 import { of as ObservableOf } from 'rxjs/observable/of';
 import { first } from 'rxjs/operator/first';
 import { Subject } from 'rxjs/Subject';
-
-import {
-  Interceptor,
-  Http,
-  RequestInterceptorOptions,
-  ResponseInterceptorOptions
-} from '../http';
+import { Interceptor, Http, RequestInterceptorOptions, ResponseInterceptorOptions } from 'ng4-http';
 
 import { AuthService } from './auth.service';
 import { AUTH_SERVICE } from './tokens';

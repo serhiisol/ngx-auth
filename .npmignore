@@ -2,8 +2,8 @@
 tsconfig.json
 
 karma.conf.js
-test.ts
 tsconfig.json
 tslint.json
+test.ts
 
-**/*.spec.ts
+src/**/*

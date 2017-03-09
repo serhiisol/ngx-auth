@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
-
-import { InterceptorStore } from '../http';
+import { InterceptorStore } from 'ng4-http';
 
 import { PublicGuard } from './public.guard';
 import { ProtectedGuard } from './protected.guard';
