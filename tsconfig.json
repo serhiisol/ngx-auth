@@ -1,7 +1,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "declaration": true,
+    "declaration": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "module": "es2015",
@@ -14,8 +14,7 @@
     "lib": ["es6", "dom"],
     "typeRoots": [
       "node_modules/@types"
-    ],
-    "outDir": "lib"
+    ]
   },
   "include": [
     "./src/**/*.ts"

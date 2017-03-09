@@ -2,6 +2,8 @@
 
 This package provides major missing feature in angular2: Authentication.
 
+Note: Package is given in completely 100% pure TypeScript
+
 ## Authentication module
 
 Authentication modules provides ability to attach authentication token automatically to the headers

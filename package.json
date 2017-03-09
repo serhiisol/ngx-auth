@@ -1,9 +1,8 @@
 {
   "name": "ng4-auth",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Angular2/4 Authentication module",
   "repository": "https://github.com/serhiisol/ng4-auth",
-  "main": "lib/index.js",
   "keywords": [
     "angular2",
     "angular4",
@@ -24,7 +23,7 @@
     "@angular/core": "2.4.8",
     "@angular/http": "2.4.8",
     "@angular/router": "3.4.8",
-    "ng4-http": "1.0.2",
+    "ng4-http": "file:../ng4-http",
     "rxjs": "5.2.0",
     "@angular/common": "2.4.8",
     "@angular/compiler": "2.4.8",

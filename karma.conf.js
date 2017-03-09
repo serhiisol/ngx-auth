@@ -32,7 +32,6 @@ module.exports = function(config) {
         rules: [
           {
             test: /\.ts$/,
-            exclude: [/node_modules/],
             loader: 'awesome-typescript-loader',
             options: {
               silent: true
