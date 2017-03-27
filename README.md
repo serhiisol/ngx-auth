@@ -14,7 +14,7 @@ Authentication modules provides ability to attach authentication token automatic
 1. Import ```AuthService``` interface to implement it with your custom Authentication service, e.g.:
 
 ```typescript
-import { AuthService } from 'ng2-http-auth/auth';
+import { AuthService } from 'ng4-auth';
 
 @Injectable()
 export class AuthenticationService implements AuthService {
