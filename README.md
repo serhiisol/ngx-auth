@@ -83,7 +83,7 @@ const protectedRoutes: Routes = [
 
 ```typescript
 import { NgModule } from '@angular/core';
-import { AuthModule, AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI, PROTECTED_FALLBACK_PAGE_URI } from 'ng2-http-auth/auth';
+import { AuthModule, AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI, PROTECTED_FALLBACK_PAGE_URI } from 'ng4-auth';
 
 import { AuthenticationService } from './authentication.service';
 
