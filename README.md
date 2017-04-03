@@ -3,6 +3,8 @@
 This package provides major missing feature in angular2: Authentication.
 
 Note: Package is given in completely 100% pure TypeScript
+Note: Package is strictly dependent on sibling ```ng4-http``` module, so make sure to use it as
+http module (it's actually imported already in ```this``` module
 
 ## Authentication module
 
