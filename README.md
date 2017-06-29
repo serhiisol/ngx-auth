@@ -7,6 +7,10 @@ This package provides major missing feature in angular2: Authentication.
 > Package is strictly dependent on sibling ```ng4-http``` module, so make sure to use it as
 http module (it's actually imported already in ```this``` module.
 
+```
+npm install ng4-auth --save
+```
+
 ## Authentication module
 
 Authentication modules provides ability to attach authentication token automatically to the headers
