@@ -96,6 +96,7 @@
     "interface-name": [true, "never-prefix"],
 
     "no-angle-bracket-type-assertion": false,
-    "prefer-const": false
+    "prefer-const": false,
+    "no-object-literal-type-assertion": false
   }
 }
