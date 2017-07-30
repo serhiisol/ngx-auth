@@ -1,5 +1,5 @@
 import { NgModule } from '@angular/core';
-import { InterceptorStore } from 'ng4-http';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
 
 import { PublicGuard } from './public.guard';
 import { ProtectedGuard } from './protected.guard';
@@ -10,10 +10,12 @@ import { AuthInterceptor } from './auth.interceptor';
     PublicGuard,
     ProtectedGuard,
     AuthInterceptor,
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true,
+    }
   ]
 })
 export class AuthModule {
-  constructor(interceptorStore: InterceptorStore, authInterceptor: AuthInterceptor) {
-    interceptorStore.register(authInterceptor);
-  }
 }

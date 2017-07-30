@@ -1,190 +1,218 @@
 import { TestBed, inject, async, fakeAsync, tick } from '@angular/core/testing';
-import { Request, Response, ResponseOptions, Headers } from '@angular/http';
-import { MockBackend, MockConnection } from '@angular/http/testing';
-import { Observable } from 'rxjs/Observable';
-import { MockHttpModule, Http, RequestInterceptorOptions, ResponseInterceptorOptions } from 'ng4-http';
+import {
+  HttpClient,
+  HTTP_INTERCEPTORS,
+  HttpErrorResponse,
+  HttpHandler
+} from '@angular/common/http';
+import {
+  HttpClientTestingModule,
+  HttpTestingController
+} from '@angular/common/http/testing';
+import { of } from 'rxjs/observable/of';
 
 import { AuthService } from './auth.service';
 import { AUTH_SERVICE } from './tokens';
 import { AuthInterceptor } from './auth.interceptor';
 
 const TEST_URI = 'TEST_URI';
+const TEST_URI2 = 'TEST_URI_2';
+const TEST_REFRESH_URI = 'TEST_REFRESH_URI';
 const TEST_TOKEN = 'TEST_TOKEN';
 
-class AuthenticationServiceStub {
-  isAuthorized() {}
-  getAccessToken() {}
-  refreshToken() {}
-  refreshShouldHappen() {}
-  verifyTokenRequest() {}
-}
-
-function ObservableDelay<T>(val: T, delay: number): Observable<any> {
-  return new Observable(observer => {
-    setTimeout(() => {
-      observer.next();
-      observer.complete();
-    }, delay);
-  });
+class AuthenticationServiceStub implements AuthService {
+  isAuthorized() {
+    return of(true);
+  }
+  getAccessToken() {
+    return of(TEST_TOKEN);
+  }
+  refreshToken() {
+    return of(TEST_TOKEN);
+  }
+  refreshShouldHappen(e: HttpErrorResponse) {
+    return e.status === 401;
+  }
+  verifyTokenRequest(url: string) {
+    return url === TEST_REFRESH_URI;
+  }
 }
 
 describe('AuthInterceptor', () => {
-  let http: Http;
-  let interceptor: AuthInterceptor;
+  let http: HttpClient;
   let service: AuthService;
-  let request: Request;
-  let response: Response;
-  let backend: MockBackend;
+  let controller: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [ MockHttpModule ],
+      imports: [ HttpClientTestingModule ],
       providers: [
-        AuthInterceptor,
-        { provide: AUTH_SERVICE, useClass: AuthenticationServiceStub }
+        {
+          provide: AUTH_SERVICE,
+          useClass: AuthenticationServiceStub
+        },
+        {
+          provide: HTTP_INTERCEPTORS,
+          useClass: AuthInterceptor,
+          multi: true,
+        }
       ]
     });
   });
 
   beforeEach(inject(
-    [AuthInterceptor, Http, AUTH_SERVICE, MockBackend],
-    (_interceptor: AuthInterceptor, _http: Http, _service: AuthService, _backend: MockBackend) => {
-      interceptor = _interceptor;
+    [ HttpClient, HttpTestingController, AUTH_SERVICE ],
+    (
+      _http: HttpClient,
+      _controller: HttpTestingController,
+      _service: AuthService
+    ) => {
       http = _http;
+      controller = _controller;
       service = _service;
-      backend = _backend;
     }
   ));
 
-  beforeEach(() => {
-    request = new Request({
-      url: TEST_URI,
-      headers: new Headers()
-    });
-    response = new Response(new ResponseOptions({
-      url: TEST_URI,
-      body: {},
-      headers: new Headers()
-    }));
-  });
-
-  it('should instantiate interceptor', () => {
-    expect(interceptor).toBeTruthy();
-  });
-
   describe('with request', () => {
 
-    it('should pass request normally', async(() => {
-      interceptor
-        .request({ url: request })
-        .subscribe(({ url }: RequestInterceptorOptions) => {
-          expect(url).toEqual(request);
-        });
-    }));
+    it('should pass request normally', () => {
+      http.get(TEST_URI).subscribe(data => {
+        expect(data['name']).toEqual('Test Data');
+      }, () => {
+        throw new Error('shouldn\'t be called')
+      });
 
-    it('should pass request normally with token', async(() => {
-      spyOn(service, 'getAccessToken').and.returnValue( Observable.of(TEST_TOKEN) );
+      const req = controller.expectOne(TEST_URI);
 
-      interceptor
-        .request({ url: request })
-        .subscribe(({ url }: RequestInterceptorOptions) => {
-          expect(url).toEqual(request);
-          expect((<Request>url).headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
-        });
-    }));
+      expect(req.request.url).toBe(TEST_URI);
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
+
+      req.flush({name: 'Test Data'});
+
+      controller.verify();
+    });
 
   });
 
   describe('with responseError', () => {
 
     it('should throw error', () => {
-      spyOn(service, 'refreshShouldHappen').and.returnValue( false );
-      spyOn(service, 'refreshToken').and.returnValue( Observable.of() );
-      spyOn(http, 'request').and.returnValue( Observable.of(true) );
+      http.get(TEST_URI).subscribe(() => {
+        throw new Error('shouldn\'t be called')
+      }, e => {
+        expect(e.status).toBe(400);
+      });
 
-      interceptor
-        .responseError({ url: request, response })
-        .catch((opts: ResponseInterceptorOptions) => {
-          expect(service.refreshShouldHappen).toHaveBeenCalledWith({});
-          expect(service.refreshShouldHappen).toHaveBeenCalledWith({});
-          expect(opts.url).toEqual(request);
-          expect(opts.response).toEqual(response);
-          expect(service.refreshToken).not.toHaveBeenCalled();
-          expect(http.request).not.toHaveBeenCalledWith(request, undefined);
-          return Observable.throw(opts);
-        });
+      const req = controller.expectOne(TEST_URI);
+
+      expect(req.request.url).toBe(TEST_URI);
+
+      req.error(new ErrorEvent('400'), { status: 400 });
+
+      controller.verify();
     });
 
-    it('should trigger refresh token request after failed original request', () => {
-      spyOn(service, 'refreshShouldHappen').and.returnValue( true );
-      spyOn(service, 'refreshToken').and.returnValue( Observable.of() );
-      spyOn(http, 'request').and.returnValue( Observable.of(true) );
+    fit('should trigger refresh token request after failed original request and retry original', () => {
+      http.get(TEST_URI).subscribe((data) => {
+        expect(data['name']).toEqual('Test Data');
 
-      interceptor
-        .responseError({ url: request, response })
-        .subscribe((status) => {
-          expect(status).toBeTruthy();
+        expect(service.verifyTokenRequest).toHaveBeenCalledWith(TEST_URI);
+        expect(service.getAccessToken).toHaveBeenCalled();
+        expect(service.refreshShouldHappen).toHaveBeenCalled();
+        expect(service.refreshToken).toHaveBeenCalled();
+      }, () => {
+        throw new Error('shouldn\'t be called')
+      });
 
-          expect(service.refreshShouldHappen).toHaveBeenCalledWith({});
-          expect(service.refreshShouldHappen).toHaveBeenCalledWith({});
-          expect(service.refreshToken).toHaveBeenCalled();
-          expect(http.request).toHaveBeenCalledWith(request, undefined);
-        });
+      const req = controller.expectOne(TEST_URI);
+
+      expect(req.request.url).toBe(TEST_URI);
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
+
+      req.error(new ErrorEvent('401'), { status: 401 });
+
+      controller.verify();
     });
 
   });
 
-  describe('with delaying', () => {
+  xdescribe('with delaying', () => {
 
-    let request2: Request;
+    it('should delay requests if refresh is in progress', () => {
+      // let requestCount = 0;
+      //
+      // let refreshObservable = ObservableDelay(1000);
+      // refreshObservable.subscribe(() => {
+      //   requestCount += 1;
+      //   expect(requestCount).toBe(1);
+      // });
+      //
+      // spyOn(service, 'refreshShouldHappen').and.returnValue(true);
+      // spyOn(service, 'refreshToken').and.returnValue(refreshObservable);
+      // spyOn(http, 'request').and.callThrough();
+      //
+      // backend.connections.subscribe((c: MockConnection) => {
+      //   requestCount += 1;
+      //   c.mockRespond(response);
+      // });
+      //
+      // interceptor
+      //   .responseError({url: request, response})
+      //   .subscribe(() => {
+      //     expect(http.request).toHaveBeenCalledWith(request, undefined);
+      //     expect(requestCount).toBe(2);
+      //   });
+      //
+      // interceptor
+      //   .request({url: request2})
+      //   .subscribe(() => expect(requestCount).toBe(2));
+      //
+      // expect(requestCount).toBe(0);
+      //
+      // tick(500);
+      // expect(requestCount).toBe(0);
+      //
+      // tick(499);
+      // expect(requestCount).toBe(0);
+      //
+      // tick(1);
+      // expect(requestCount).toBe(2);
 
-    beforeEach(() => {
-      request2 = new Request({
-        url: TEST_URI + TEST_URI,
-        headers: new Headers()
+
+
+      spyOn(service, 'verifyTokenRequest').and.callFake((url: string) => {
+        return url === TEST_REFRESH_URI;
       });
-    });
-
-    it('should delay requests if refresh is in progress', fakeAsync(() => {
-      let requestCount = 0;
-
-      let refreshObservable = ObservableDelay(true, 1000);
-      refreshObservable.subscribe(() => {
-        requestCount += 1;
-        expect(requestCount).toBe(1);
-      });
-
       spyOn(service, 'refreshShouldHappen').and.returnValue(true);
-      spyOn(service, 'refreshToken').and.returnValue(refreshObservable);
-      spyOn(http, 'request').and.callThrough();
+      // spyOn(service, 'refreshToken').and.returnValue( delay.call(of(TEST_TOKEN), 1000) );
 
-      backend.connections.subscribe((c: MockConnection) => {
-        requestCount += 1;
-        c.mockRespond(response);
+      http.get(TEST_URI).subscribe((data) => {
+        expect(data['name']).toEqual('Test Data');
+
+        expect(service.verifyTokenRequest).toHaveBeenCalledWith(TEST_URI);
+        expect(service.getAccessToken).toHaveBeenCalled();
+        expect(service.refreshShouldHappen).toHaveBeenCalled();
+        expect(service.refreshToken).toHaveBeenCalled();
+      }, () => {
+        throw new Error('shouldn\'t be called')
       });
 
-      interceptor
-        .responseError({url: request, response})
-        .subscribe(() => {
-          expect(http.request).toHaveBeenCalledWith(request, undefined);
-          expect(requestCount).toBe(2);
-        });
+      http.get(TEST_URI2).subscribe((data) => {
+        expect(data['name']).toBe('test2');
+      });
 
-      interceptor
-        .request({url: request2})
-        .subscribe(() => expect(requestCount).toBe(2));
+      const req = controller.expectOne(TEST_URI);
+      const req2 = controller.expectOne(TEST_URI2);
 
-      expect(requestCount).toBe(0);
+      expect(req.request.url).toBe(TEST_URI);
+      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
 
-      tick(500);
-      expect(requestCount).toBe(0);
+      req.error(new ErrorEvent('401'));
+      req2.flush({ name: 'test2' });
 
-      tick(499);
-      expect(requestCount).toBe(0);
+      controller.verify();
 
-      tick(1);
-      expect(requestCount).toBe(2);
-    }));
+    });
 
   });
 

@@ -1,123 +1,227 @@
-import { Injectable, Inject } from '@angular/core';
-import { Request } from '@angular/http';
-import { Observable } from 'rxjs/Observable';
-import { of as ObservableOf } from 'rxjs/observable/of';
-import { first } from 'rxjs/operator/first';
+import { Injectable, Injector } from '@angular/core';
+import {
+  HttpClient,
+  HttpEvent,
+  HttpInterceptor,
+  HttpHandler,
+  HttpRequest,
+  HttpErrorResponse
+} from '@angular/common/http';
 import { Subject } from 'rxjs/Subject';
-import { Interceptor, Http, RequestInterceptorOptions, ResponseInterceptorOptions } from 'ng4-http';
+import { Observable } from 'rxjs/Observable';
+
+import {
+  map,
+  first,
+  switchMap,
+  _throw,
+  _catch
+} from './rxjs.util';
 
 import { AuthService } from './auth.service';
 import { AUTH_SERVICE } from './tokens';
 
 @Injectable()
-export class AuthInterceptor implements Interceptor {
+export class AuthInterceptor implements HttpInterceptor {
 
   /**
-   * Is refresh token is being executed, postpone incoming requests
+   * Is refresh token is being executed
+   *
+   * @private
+   *
    * @type {boolean}
-   * @private
    */
-  private refreshTokenInProgress = false;
+  private refreshInProgress = false;
 
   /**
-   * Is refresh token is being executed, notify all incoming requests through this subject
-   * @type {Subject<boolean>}
+   * Notify all outstanding requests through this subject
+   *
    * @private
+   *
+   * @type {Subject<boolean>}
    */
   private refreshSubject: Subject<boolean> = new Subject<boolean>();
 
-  constructor(
-    @Inject(AUTH_SERVICE) private authService: AuthService,
-    private http: Http,
-  ) {}
+  constructor(private injector: Injector) {}
+
+  /**
+   * Intercept an outgoing `HttpRequest`
+   *
+   * @param {HttpRequest<*>} req
+   * @param {HttpHandler} next
+   *
+   * @returns {Observable<HttpEvent<*>>}
+   */
+  public intercept(
+    req: HttpRequest<any>,
+    next: HttpHandler
+  ): Observable<HttpEvent<any>> {
+    console.log('intercept', req.url);
+    const authService: AuthService =
+      this.injector.get<AuthService>(AUTH_SERVICE);
+
+    if (authService.verifyTokenRequest(req.url)) {
+      return next.handle(req);
+    }
+
+    return this.processIntercept(req, next);
+  }
+
+  /**
+   * Process all the requests via custom interceptors.
+   *
+   * @private
+   *
+   * @param {HttpRequest<*>} original
+   * @param {HttpHandler} next
+   *
+   * @returns {Observable<HttpEvent<*>>}
+   */
+  private processIntercept(
+    original: HttpRequest<any>,
+    next: HttpHandler
+  ): Observable<HttpEvent<any>> {
+    console.log('processIntercept', original.url);
+    const clone: HttpRequest<any> = original.clone();
+
+    return _catch(
+      switchMap(
+        this.request(clone),
+        (req: HttpRequest<any>) => next.handle(req)
+      ),
+      (res: HttpErrorResponse) => this.responseError(clone, res)
+    );
+  }
 
   /**
    * Request interceptor. Delays request if refresh is in progress
    * otherwise adds token to the headers
-   * @param {Request|string} url
-   * @param {RequestOptionsArgs} options
+   *
+   * @private
+   *
+   * @param {HttpRequest<*>} req
+   *
    * @returns {Observable}
    */
-  public request({ url, options }: RequestInterceptorOptions): Observable<RequestInterceptorOptions> {
-    const urlString = url instanceof Request ? (<Request>url).url : url;
-
-    if (this.refreshTokenInProgress && !this.authService.verifyTokenRequest(<string>urlString)) {
-      return this.delayRequest({ url, options });
+  private request(req: HttpRequest<any>): Observable<HttpRequest<any>> {
+    console.log('request', req.url);
+    if (this.refreshInProgress) {
+      return this.delayRequest(req);
     }
 
-    return this.addToken({ url, options });
+    return this.addToken(req);
   }
 
   /**
    * Failed request interceptor, check if it has to be processed with refresh
-   * @param {Request|string} url
-   * @param {RequestOptionsArgs} options
-   * @param {Response} response
-   * @returns {Observable}
+   *
+   * @private
+   *
+   * @param {HttpRequest<*>} req
+   * @param {HttpErrorResponse} res
+   *
+   * @returns {Observable<HttpRequest<*>>}
    */
-  public responseError({ url, options, response }: ResponseInterceptorOptions): Observable<ResponseInterceptorOptions> {
-    if (!this.refreshTokenInProgress && this.authService.refreshShouldHappen(response)) {
-      this.refreshTokenInProgress = true;
+  private responseError(
+    req: HttpRequest<any>,
+    res: HttpErrorResponse
+  ): Observable<HttpEvent<any>> {
+    console.log('responseError', req.url);
+    const http: HttpClient =
+      this.injector.get<HttpClient>(HttpClient);
+    const authService: AuthService =
+      this.injector.get<AuthService>(AUTH_SERVICE);
 
-      this.authService
+    const refreshShouldHappen: boolean =
+      authService.refreshShouldHappen(res);
+
+    const delayed$ = switchMap(
+      this.delayRequest(req, res),
+      (_req: HttpRequest<any>) => {
+        return http.request(_req);
+      }
+    );
+    console.log('refreshShouldHappen', refreshShouldHappen && !this.refreshInProgress);
+    if (refreshShouldHappen && !this.refreshInProgress) {
+      this.refreshInProgress = true;
+
+      authService
         .refreshToken()
         .subscribe(
           () => {
-            this.refreshTokenInProgress = false;
+            console.log('successfully refreshed');
+            this.refreshInProgress = false;
             this.refreshSubject.next(true);
           },
-          () => this.refreshSubject.next(false)
+          () => {
+            console.log('error refreshed');
+            this.refreshInProgress = false;
+            this.refreshSubject.next(false)
+          }
         );
     }
 
-    if (this.refreshTokenInProgress && this.authService.refreshShouldHappen(response)) {
-      return this.delayRequest({ url, options })
-        .switchMap(({ url, options }) => {
-          return this.http.request(url, options);
-        });
+    if (refreshShouldHappen && this.refreshInProgress) {
+      return delayed$;
     }
 
-    return Observable.throw({ url, options, response });
+    return _throw(res);
   }
 
   /**
    * Add access token to headers or the request
+   *
    * @private
-   * @param {Request|string} url
-   * @param {RequestOptionsArgs} options
-   * @returns {Observable}
+   *
+   * @param {HttpRequest<*>} req
+   *
+   * @returns {Observable<HttpRequest<*>>}
    */
-  private addToken({ url, options }: RequestInterceptorOptions): Observable<RequestInterceptorOptions> {
-    const accessObservable: Observable<string> = this.authService.getAccessToken();
+  private addToken(req: HttpRequest<any>): Observable<HttpRequest<any>> {
+    console.log('addToken', req.url);
+    const authService: AuthService =
+      this.injector.get<AuthService>(AUTH_SERVICE);
 
-    if (!accessObservable) {
-      return ObservableOf({ url, options });
-    }
-
-    return this.authService.getAccessToken()
-      .map((token: string) => {
-        if (token && url instanceof Request) {
-          (<Request>url).headers.set('Authorization', `Bearer ${token}`);
+    return map(
+      authService.getAccessToken(),
+      (token: string) => {
+        if (token) {
+          return req.clone({
+            setHeaders: { Authorization: `Bearer ${token}` }
+          });
         }
 
-        return { url, options };
-      });
+        return req;
+      }
+    );
   }
 
   /**
    * Delay request, by subscribing on refresh event, once it finished, process it
    * otherwise throw error
-   * @param {Request|string} url
-   * @param {RequestOptionsArgs} options
-   * @returns {Observable}
+   *
+   * @private
+   *
+   * @param {HttpRequest<*>} req
+   * @param {HttpErrorResponse} [res]
+   *
+   * @returns {Observable<HttpRequest<*>>}
    */
-  private delayRequest(options: RequestInterceptorOptions) {
-    return first.call(this.refreshSubject.asObservable())
-      .switchMap((refreshStatus: boolean) => {
-        if (refreshStatus) {
-          return this.addToken(options);
+  private delayRequest(
+    req: HttpRequest<any>,
+    res?: HttpErrorResponse
+  ): Observable<HttpRequest<any>> {
+    console.log('delayRequest', req.url);
+    return switchMap(
+      first(this.refreshSubject),
+      (status: boolean) => {
+        console.log('delayRequest exec', req.url);
+        if (status) {
+          return this.addToken(req)
         }
-        return Observable.throw(options);
-      });
+
+        return _throw(res || req)
+      }
+    );
   }
 }
