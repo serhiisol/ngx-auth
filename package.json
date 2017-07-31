@@ -2,7 +2,7 @@
   "name": "ngx-auth",
   "version": "2.0.0",
   "description": "Angular 4.3.0+ Authentication module",
-  "repository": "https://github.com/serhiisol/ng4-auth",
+  "repository": "https://github.com/serhiisol/ngx-auth",
   "keywords": [
     "angular2",
     "angular4",
