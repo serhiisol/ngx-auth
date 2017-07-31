@@ -14,7 +14,9 @@
     "lib": ["es6", "dom"],
     "typeRoots": [
       "node_modules/@types"
-    ]
+    ],
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
   "include": [
     "./src/**/*.ts"

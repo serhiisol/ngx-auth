@@ -1,4 +1,4 @@
-import { Response } from '@angular/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
 
 /**
@@ -6,51 +6,67 @@ import { Observable } from 'rxjs/Observable';
  * @export
  * @interface AuthService
  */
-export interface AuthService {
+export abstract class AuthService {
 
   /**
    * Check, if user already authorized.
-   * @description Should return Observable with true or false values
+   *
+   * Should return Observable with true or false values
+   *
+   * @public
+   *
    * @returns {Observable<boolean>}
-   * @memberOf AuthService
    */
-  isAuthorized(): Observable<boolean>;
+  public abstract isAuthorized(): Observable<boolean>;
 
   /**
    * Get access token
-   * @description Should return access token in Observable from e.g.
+   *
+   * Should return access token in Observable from e.g.
    * localStorage
+   *
+   * @public
+   *
    * @returns {Observable<string>}
-   * @memberOf AuthService
    */
-  getAccessToken(): Observable<string>;
+  public abstract getAccessToken(): Observable<string>;
 
   /**
    * Function, that should perform refresh token verifyTokenRequest
-   * @description Should be successfully completed so interceptor
+   *
+   * Should be successfully completed so interceptor
    * can execute pending requests or retry original one
-   * @returns {Observable<any>}
-   * @memberOf AuthService
+   *
+   * @public
+   *
+   * @returns {Observable<*>}
    */
-  refreshToken(): Observable<any>;
+  public abstract refreshToken(): Observable<any>;
 
   /**
    * Function, checks response of failed request to determine,
    * whether token be refreshed or not.
-   * @description Essentialy checks status
-   * @param {Response} response
-   * @returns {boolean}
-   * @memberOf AuthService
+   *
+   * Essentially checks status
+   *
+   * @public
+   *
+   * @param {HttpErrorResponse} response
+   *
+   * @returns {Observable<boolean>}
    */
-  refreshShouldHappen(response: Response): boolean;
+  public abstract refreshShouldHappen(response: HttpErrorResponse): boolean;
 
   /**
    * Verify that outgoing request is refresh-token,
    * so interceptor won't intercept this request
+   *
+   * @public
+   *
    * @param {string} url
-   * @returns {boolean}
-   * @memberOf AuthService
+   *
+   * @returns {Observable<boolean>}
    */
-  verifyTokenRequest(url: string): boolean;
+  public abstract verifyTokenRequest(url: string): boolean;
 
 }

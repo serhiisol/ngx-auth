@@ -8,17 +8,21 @@ import {
 } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
 
+import { map } from './rxjs.util';
+
 import { AuthService } from './auth.service';
 import { AUTH_SERVICE, PROTECTED_FALLBACK_PAGE_URI } from './tokens';
 
 /**
- * Guard, checks access token availability and allows or desallows access to page,
+ * Guard, checks access token availability and allows or disallows access to page,
  * and redirects out
  *
  * usage: { path: 'test', component: TestComponent, canActivate: [ PublicGuard ] }
  *
  * @export
+ *
  * @class PublicGuard
+ *
  * @implements {CanActivate}
  * @implements {CanActivateChild}
  */
@@ -33,40 +37,53 @@ export class PublicGuard implements CanActivate, CanActivateChild {
 
   /**
    * CanActivate handler
-   * @param {ActivatedRouteSnapshot} route
+   *
+   * @param {ActivatedRouteSnapshot} _route
    * @param {RouterStateSnapshot} state
+   *
    * @returns {Observable<boolean>}
    */
-  public canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
-    return this.authService.isAuthorized()
-      .map(
-        (isAuthorized: boolean) => {
+  public canActivate(
+    _route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+  ): Observable<boolean> {
+    return map(
+      this.authService.isAuthorized(),
+      (isAuthorized: boolean) => {
 
-          if (isAuthorized && !this.isProtectedPage(state)) {
-            this.router.navigateByUrl( this.protectedFallbackPageUri );
+        if (isAuthorized && !this.isProtectedPage(state)) {
+          this.router.navigateByUrl( this.protectedFallbackPageUri );
 
-            return false;
-          }
-
-          return true;
+          return false;
         }
-      );
+
+        return true;
+      }
+    );
   }
 
   /**
    * CanActivateChild handler
+   *
    * @param {ActivatedRouteSnapshot} route
    * @param {RouterStateSnapshot} state
+   *
    * @returns {Observable<boolean>}
    */
-  public canActivateChild(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
+  public canActivateChild(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+  ): Observable<boolean> {
     return this.canActivate(route, state);
   }
 
   /**
    * Check, if current page is protected fallback page
+   *
    * @private
+   *
    * @param {RouterStateSnapshot} state
+   *
    * @returns {boolean}
    */
   private isProtectedPage(state: RouterStateSnapshot): boolean {

@@ -1,14 +1,11 @@
-# Angular 2/4 Authentication
+# Angular 4.3.0+ Authentication
 
-This package provides major missing feature in angular2: Authentication.
+This package provides authentication module with interceptor
 
 > Package is given in completely 100% pure TypeScript.
 
-> Package is strictly dependent on sibling ```ng4-http``` module, so make sure to use it as
-http module (it's actually imported already in ```this``` module.
-
 ```
-npm install ng4-auth --save
+npm install ngx-auth --save
 ```
 
 ## Authentication module
@@ -26,28 +23,21 @@ import { AuthService } from 'ng4-auth';
 @Injectable()
 export class AuthenticationService implements AuthService {
 
-  constructor(private http: Http) {
-  }
+  constructor(private http: Http) {}
 
-  isAuthorized(): Observable<boolean> {
+  public isAuthorized(): Observable<boolean> {
     const isAuthorized: boolean = !!localStorage.getItem('accessToken');
 
     return Observable.of(isAuthorized);
   }
 
-  logout(): void {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    location.reload(true);
-  }
-
-  getAccessToken(): Observable<string> {
+  public getAccessToken(): Observable<string> {
     const accessToken: string = localStorage.getItem('accessToken');
 
     return Observable.of(accessToken);
   }
 
-  refreshToken(): Observable<any> {
+  public refreshToken(): Observable<any> {
     const refreshToken: string = localStorage.getItem('refreshToken');
 
     return this.http
@@ -55,11 +45,11 @@ export class AuthenticationService implements AuthService {
       .catch(() => this.logout())
   }
 
-  refreshShouldHappen(response: Response): boolean {
+  public refreshShouldHappen(response: Response): boolean {
     return response.status === 401;
   }
 
-  isRefreshTokenRequest(url: string): boolean {
+  public verifyTokenRequest(url: string): boolean {
     return url.endsWith('refresh-token');
   }
 
@@ -70,7 +60,11 @@ export class AuthenticationService implements AuthService {
 
 ```typescript
 const publicRoutes: Routes = [
-  { path: '', component: LoginComponent, canActivate: [ PublicGuard ] }
+  { 
+    path: '',
+    component: LoginComponent,
+    canActivate: [ PublicGuard ]
+  }
 ];
 ```
 ```typescript
@@ -90,7 +84,7 @@ const protectedRoutes: Routes = [
 
 ```typescript
 import { NgModule } from '@angular/core';
-import { AuthModule, AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI, PROTECTED_FALLBACK_PAGE_URI } from 'ng4-auth';
+import { AuthModule, AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI, PROTECTED_FALLBACK_PAGE_URI } from 'ngx-auth';
 
 import { AuthenticationService } from './authentication.service';
 
