@@ -38,12 +38,15 @@ export class PublicGuard implements CanActivate, CanActivateChild {
   /**
    * CanActivate handler
    *
-   * @param {ActivatedRouteSnapshot} route
+   * @param {ActivatedRouteSnapshot} _route
    * @param {RouterStateSnapshot} state
    *
    * @returns {Observable<boolean>}
    */
-  public canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
+  public canActivate(
+    _route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+  ): Observable<boolean> {
     return map(
       this.authService.isAuthorized(),
       (isAuthorized: boolean) => {

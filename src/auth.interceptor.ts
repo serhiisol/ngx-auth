@@ -48,23 +48,22 @@ export class AuthInterceptor implements HttpInterceptor {
    * Intercept an outgoing `HttpRequest`
    *
    * @param {HttpRequest<*>} req
-   * @param {HttpHandler} next
+   * @param {HttpHandler} delegate
    *
    * @returns {Observable<HttpEvent<*>>}
    */
   public intercept(
     req: HttpRequest<any>,
-    next: HttpHandler
+    delegate: HttpHandler
   ): Observable<HttpEvent<any>> {
-    console.log('intercept', req.url);
     const authService: AuthService =
       this.injector.get<AuthService>(AUTH_SERVICE);
 
     if (authService.verifyTokenRequest(req.url)) {
-      return next.handle(req);
+      return delegate.handle(req);
     }
 
-    return this.processIntercept(req, next);
+    return this.processIntercept(req, delegate);
   }
 
   /**
@@ -73,21 +72,20 @@ export class AuthInterceptor implements HttpInterceptor {
    * @private
    *
    * @param {HttpRequest<*>} original
-   * @param {HttpHandler} next
+   * @param {HttpHandler} delegate
    *
    * @returns {Observable<HttpEvent<*>>}
    */
   private processIntercept(
     original: HttpRequest<any>,
-    next: HttpHandler
+    delegate: HttpHandler
   ): Observable<HttpEvent<any>> {
-    console.log('processIntercept', original.url);
     const clone: HttpRequest<any> = original.clone();
 
     return _catch(
       switchMap(
         this.request(clone),
-        (req: HttpRequest<any>) => next.handle(req)
+        (req: HttpRequest<any>) => delegate.handle(req)
       ),
       (res: HttpErrorResponse) => this.responseError(clone, res)
     );
@@ -103,8 +101,7 @@ export class AuthInterceptor implements HttpInterceptor {
    *
    * @returns {Observable}
    */
-  private request(req: HttpRequest<any>): Observable<HttpRequest<any>> {
-    console.log('request', req.url);
+  private request(req: HttpRequest<any>): Observable<HttpRequest<any>|HttpEvent<any>> {
     if (this.refreshInProgress) {
       return this.delayRequest(req);
     }
@@ -126,22 +123,11 @@ export class AuthInterceptor implements HttpInterceptor {
     req: HttpRequest<any>,
     res: HttpErrorResponse
   ): Observable<HttpEvent<any>> {
-    console.log('responseError', req.url);
-    const http: HttpClient =
-      this.injector.get<HttpClient>(HttpClient);
     const authService: AuthService =
       this.injector.get<AuthService>(AUTH_SERVICE);
-
     const refreshShouldHappen: boolean =
       authService.refreshShouldHappen(res);
 
-    const delayed$ = switchMap(
-      this.delayRequest(req, res),
-      (_req: HttpRequest<any>) => {
-        return http.request(_req);
-      }
-    );
-    console.log('refreshShouldHappen', refreshShouldHappen && !this.refreshInProgress);
     if (refreshShouldHappen && !this.refreshInProgress) {
       this.refreshInProgress = true;
 
@@ -149,12 +135,10 @@ export class AuthInterceptor implements HttpInterceptor {
         .refreshToken()
         .subscribe(
           () => {
-            console.log('successfully refreshed');
             this.refreshInProgress = false;
             this.refreshSubject.next(true);
           },
           () => {
-            console.log('error refreshed');
             this.refreshInProgress = false;
             this.refreshSubject.next(false)
           }
@@ -162,7 +146,7 @@ export class AuthInterceptor implements HttpInterceptor {
     }
 
     if (refreshShouldHappen && this.refreshInProgress) {
-      return delayed$;
+      return this.delayRequest(req, res);
     }
 
     return _throw(res);
@@ -178,7 +162,6 @@ export class AuthInterceptor implements HttpInterceptor {
    * @returns {Observable<HttpRequest<*>>}
    */
   private addToken(req: HttpRequest<any>): Observable<HttpRequest<any>> {
-    console.log('addToken', req.url);
     const authService: AuthService =
       this.injector.get<AuthService>(AUTH_SERVICE);
 
@@ -210,14 +193,15 @@ export class AuthInterceptor implements HttpInterceptor {
   private delayRequest(
     req: HttpRequest<any>,
     res?: HttpErrorResponse
-  ): Observable<HttpRequest<any>> {
-    console.log('delayRequest', req.url);
+  ): Observable<HttpEvent<any>> {
+    const http: HttpClient =
+      this.injector.get<HttpClient>(HttpClient);
+
     return switchMap(
       first(this.refreshSubject),
       (status: boolean) => {
-        console.log('delayRequest exec', req.url);
         if (status) {
-          return this.addToken(req)
+          return http.request(req)
         }
 
         return _throw(res || req)

@@ -38,13 +38,13 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
   /**
    * CanActivate handler
    *
-   * @param {ActivatedRouteSnapshot} route
+   * @param {ActivatedRouteSnapshot} _route
    * @param {RouterStateSnapshot} state
    *
    * @returns {Observable<boolean>}
    */
   public canActivate(
-    route: ActivatedRouteSnapshot,
+    _route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): Observable<boolean> {
     return map(
