@@ -1,6 +1,6 @@
 {
   "name": "ngx-auth",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Angular 4.3.0+ Authentication module",
   "repository": "https://github.com/serhiisol/ngx-auth",
   "keywords": [
@@ -13,10 +13,10 @@
   "author": "Serhii Sol",
   "license": "MIT",
   "dependencies": {
-    "@angular/core": "4.3.2",
-    "@angular/common": "4.3.2",
-    "@angular/router": "4.3.2",
-    "rxjs": "5.4.2"
+    "@angular/core": "^4.3.2",
+    "@angular/common": "^4.3.2",
+    "@angular/router": "^4.3.2",
+    "rxjs": "^5.4.2"
   },
   "devDependencies": {
     "@angular/compiler": "4.3.2",

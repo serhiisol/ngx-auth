@@ -45,7 +45,7 @@ export class AuthenticationService implements AuthService {
       .catch(() => this.logout())
   }
 
-  public refreshShouldHappen(response: Response): boolean {
+  public refreshShouldHappen(response: HttpErrorResponse): boolean {
     return response.status === 401;
   }
 
