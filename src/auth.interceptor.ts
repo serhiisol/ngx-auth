@@ -165,7 +165,7 @@ export class AuthInterceptor implements HttpInterceptor {
     const authService: AuthService =
       this.injector.get<AuthService>(AUTH_SERVICE);
 
-    return map(
+    return first(map(
       authService.getAccessToken(),
       (token: string) => {
         if (token) {
@@ -176,7 +176,7 @@ export class AuthInterceptor implements HttpInterceptor {
 
         return req;
       }
-    );
+    ));
   }
 
   /**
