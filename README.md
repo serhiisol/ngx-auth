@@ -8,6 +8,9 @@ This package provides authentication module with interceptor
 npm install ngx-auth --save
 ```
 
+## Full example
+Full example you can find in this repo [serhiisol/ngx-auth-example](https://github.com/serhiisol/ngx-auth-example)
+
 ## Authentication module
 
 Authentication modules provides ability to attach authentication token automatically to the headers
