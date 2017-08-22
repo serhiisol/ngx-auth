@@ -1,6 +1,6 @@
 {
   "name": "ngx-auth",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Angular 4.3.0+ Authentication module",
   "repository": "https://github.com/serhiisol/ngx-auth",
   "keywords": [
@@ -12,18 +12,23 @@
   ],
   "author": "Serhii Sol",
   "license": "MIT",
-  "dependencies": {
-    "@angular/core": "^4.3.2",
-    "@angular/common": "^4.3.2",
-    "@angular/router": "^4.3.2",
-    "rxjs": "^5.4.2"
+  "peerDependencies": {
+    "@angular/core": ">=4.3.2",
+    "@angular/common": ">=4.3.2",
+    "@angular/router": ">=4.3.2",
+    "rxjs": ">=5.4.2"
   },
   "devDependencies": {
-    "@angular/compiler": "4.3.2",
-    "@angular/platform-browser": "4.3.2",
-    "@angular/platform-browser-dynamic": "4.3.2",
+    "@angular/core": ">=4.3.2",
+    "@angular/common": ">=4.3.2",
+    "@angular/router": ">=4.3.2",
+    "@angular/compiler": ">=4.3.2",
+    "@angular/platform-browser": ">=4.3.2",
+    "@angular/platform-browser-dynamic": ">=4.3.2",
     "@types/jasmine": "2.5.53",
     "@types/node": "8.0.17",
+    "rxjs": ">=5.4.2",
+    "zone.js": ">=0.8.16",
     "awesome-typescript-loader": "3.2.2",
     "jasmine-core": "2.7.0",
     "karma": "1.7.0",
@@ -36,8 +41,7 @@
     "tslint": "5.5.0",
     "webpack": "3.4.1",
     "webpack-dev-server": "2.6.1",
-    "typescript": "2.4.2",
-    "zone.js": "0.8.16"
+    "typescript": "2.4.2"
   },
   "scripts": {
     "lint": "tslint --project tsconfig.json",
