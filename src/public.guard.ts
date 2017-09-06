@@ -52,7 +52,7 @@ export class PublicGuard implements CanActivate, CanActivateChild {
       (isAuthorized: boolean) => {
 
         if (isAuthorized && !this.isProtectedPage(state)) {
-          this.router.navigateByUrl( this.protectedFallbackPageUri );
+          this.navigate(this.protectedFallbackPageUri);
 
           return false;
         }
@@ -89,4 +89,19 @@ export class PublicGuard implements CanActivate, CanActivateChild {
   private isProtectedPage(state: RouterStateSnapshot): boolean {
     return state.url === this.protectedFallbackPageUri;
   }
+
+  /**
+   * Navigate away from the app / path
+   *
+   * @private
+   * @param {string} url
+   */
+  private navigate(url: string): void {
+    if (url.startsWith('http')) {
+      window.location.href = url;
+    } else {
+      this.router.navigateByUrl(url);
+    }
+  }
+
 }
