@@ -30,7 +30,7 @@ function ObservableDelay<T>(val: T, delay: number, cb = () => {}): Observable<an
   });
 }
 
-class AuthenticationServiceStub implements AuthService {
+class AuthenticationServiceStub extends AuthService {
   isAuthorized() {
     return of(true);
   }
@@ -47,6 +47,64 @@ class AuthenticationServiceStub implements AuthService {
     return url === TEST_REFRESH_URI;
   }
 }
+
+class CustomHeaderAuthenticationServiceStub extends AuthenticationServiceStub {
+  public getHeaders(token: string) : any {
+    return { 'x-auth-token': token };
+  }
+}
+
+describe('AuthInterceptor', () => {
+  let http: HttpClient;
+  let service: AuthService;
+  let controller: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [ HttpClientTestingModule ],
+      providers: [
+        {
+          provide: AUTH_SERVICE,
+          useClass: CustomHeaderAuthenticationServiceStub
+        },
+        {
+          provide: HTTP_INTERCEPTORS,
+          useClass: AuthInterceptor,
+          multi: true,
+        }
+      ]
+    });
+  });
+
+  beforeEach(inject(
+    [ HttpClient, HttpTestingController, AUTH_SERVICE ],
+    (
+      _http: HttpClient,
+      _controller: HttpTestingController,
+      _service: AuthService
+    ) => {
+      http = _http;
+      controller = _controller;
+      service = _service;
+    }
+  ));
+
+  describe('with request', () => {
+    it('should customize the authorization headers', () => {
+      http.get(TEST_URI).subscribe(data => {
+        expect(data['name']).toEqual('Test_Data');
+      }, fail);
+
+      const req = controller.expectOne(TEST_URI);
+
+      expect(req.request.url).toBe(TEST_URI);
+      expect(req.request.headers.get('x-auth-token')).toBe(TEST_TOKEN);
+
+      req.flush({name: 'Test_Data'});
+    });
+
+  });
+});
 
 describe('AuthInterceptor', () => {
   let http: HttpClient;

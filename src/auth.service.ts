@@ -69,4 +69,21 @@ export abstract class AuthService {
    */
   public abstract verifyTokenRequest(url: string): boolean;
 
+
+  /**
+   * Add token to headers, dependent on server
+   * set-up, by default adds a bearer token.
+   * Called by interceptor.
+   *
+   * To change behavior, override this method.
+   *
+   * @public
+   *
+   * @param {string} token
+   *
+   * @returns {[name: string]: string | string[]}
+   */
+  public getHeaders(token: string) : { [name: string]: string | string[] } {
+    return { Authorization: `Bearer ${token}` };
+  }
 }

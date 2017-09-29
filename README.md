@@ -24,7 +24,7 @@ Authentication modules provides ability to attach authentication token automatic
 import { AuthService } from 'ngx-auth';
 
 @Injectable()
-export class AuthenticationService implements AuthService {
+export class AuthenticationService extends AuthService {
 
   constructor(private http: Http) {}
 
@@ -63,7 +63,7 @@ export class AuthenticationService implements AuthService {
 
 ```typescript
 const publicRoutes: Routes = [
-  { 
+  {
     path: '',
     component: LoginComponent,
     canActivate: [ PublicGuard ]
@@ -105,7 +105,7 @@ export class AuthenticationModule {
 
 ```
 
-where, 
+where,
 * ```PROTECTED_FALLBACK_PAGE_URI``` - main protected page to be redirected to, in case if user will reach public route, that is protected
 by ```PublicGuard``` and will be authenticated
 
