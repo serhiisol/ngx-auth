@@ -30,7 +30,7 @@ function ObservableDelay<T>(val: T, delay: number, cb = () => {}): Observable<an
   });
 }
 
-class AuthenticationServiceStub extends AuthService {
+class AuthenticationServiceStub implements AuthService {
   isAuthorized() {
     return of(true);
   }

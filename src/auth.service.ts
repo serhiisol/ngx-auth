@@ -83,7 +83,5 @@ export abstract class AuthService {
    *
    * @returns {[name: string]: string | string[]}
    */
-  public getHeaders(token: string) : { [name: string]: string | string[] } {
-    return { Authorization: `Bearer ${token}` };
-  }
+  public abstract getHeaders?(token: string) : { [name: string]: string | string[] };
 }

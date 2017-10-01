@@ -24,7 +24,7 @@ Authentication modules provides ability to attach authentication token automatic
 import { AuthService } from 'ngx-auth';
 
 @Injectable()
-export class AuthenticationService extends AuthService {
+export class AuthenticationService implements AuthService {
 
   constructor(private http: Http) {}
 
@@ -115,3 +115,7 @@ by ```ProtectedGuard``` and won't be authenticated
 * ```AUTH_SERVICE``` - Authentication service token providers
 
 3. Provide your ```AuthenticationModule``` in your ```AppModule```
+
+### Customizing authentication headers
+
+By default, requests are intercepted and a ```{ Authorization: 'Bearer ${token}'}``` header is injected. To customize this behavior, implement the ```getHeaders``` method on your ```AuthenticationService```
