@@ -63,7 +63,7 @@ export class AuthenticationService implements AuthService {
 
 ```typescript
 const publicRoutes: Routes = [
-  { 
+  {
     path: '',
     component: LoginComponent,
     canActivate: [ PublicGuard ]
@@ -105,7 +105,7 @@ export class AuthenticationModule {
 
 ```
 
-where, 
+where,
 * ```PROTECTED_FALLBACK_PAGE_URI``` - main protected page to be redirected to, in case if user will reach public route, that is protected
 by ```PublicGuard``` and will be authenticated
 
@@ -115,3 +115,7 @@ by ```ProtectedGuard``` and won't be authenticated
 * ```AUTH_SERVICE``` - Authentication service token providers
 
 3. Provide your ```AuthenticationModule``` in your ```AppModule```
+
+### Customizing authentication headers
+
+By default, requests are intercepted and a ```{ Authorization: 'Bearer ${token}'}``` header is injected. To customize this behavior, implement the ```getHeaders``` method on your ```AuthenticationService```
