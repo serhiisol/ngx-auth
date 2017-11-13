@@ -1,3 +1,6 @@
 # dependencies
 node_modules
 lib
+.idea
+dist
+yarn.lock
