@@ -1,4 +1,4 @@
-# Angular 4.3.0+ Authentication
+# Angular 5+ Authentication
 
 This package provides authentication module with interceptor
 
@@ -6,6 +6,11 @@ This package provides authentication module with interceptor
 
 ```
 npm install ngx-auth --save
+```
+
+Note: If you want to use library for angular 4, use version 2.2.0
+```
+npm install ngx-auth@2.2.0 --save
 ```
 
 ## Full example
