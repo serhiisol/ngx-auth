@@ -1,6 +1,6 @@
 {
   "name": "ngx-auth",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Angular 4.3.0+ Authentication module",
   "repository": "https://github.com/serhiisol/ngx-auth",
   "keywords": [
@@ -41,10 +41,15 @@
     "tslint": "5.5.0",
     "webpack": "3.4.1",
     "webpack-dev-server": "2.6.1",
-    "typescript": "2.4.2"
+    "typescript": "2.4.2",
+    "@angular/cli": "1.5.0",
+    "@angular/compiler-cli": ">=4.3.2",
+    "@angular/language-service": ">=4.3.2",
+    "ng-packagr": "1.6.0-rc.0"
   },
   "scripts": {
     "lint": "tslint --project tsconfig.json",
-    "test": "karma start karma.conf.js"
+    "test": "karma start karma.conf.js",
+    "build": "ng-packagr -p ng-package.json"
   }
 }
