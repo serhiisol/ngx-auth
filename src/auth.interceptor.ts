@@ -1,22 +1,11 @@
 import { Injectable, Injector } from '@angular/core';
-import {
-  HttpClient,
-  HttpEvent,
-  HttpInterceptor,
-  HttpHandler,
-  HttpRequest,
-  HttpErrorResponse
-} from '@angular/common/http';
-import { Subject } from 'rxjs/Subject';
+import { HttpClient, HttpEvent, HttpInterceptor, HttpHandler, HttpRequest, HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
-
-import {
-  map,
-  first,
-  switchMap,
-  _throw,
-  _catch
-} from './rxjs.util';
+import { Subject } from 'rxjs/Subject';
+import 'rxjs/add/operator/catch';
+import 'rxjs/add/operator/first';
+import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/switchMap';
 
 import { AuthService } from './auth.service';
 import { AUTH_SERVICE } from './tokens';
@@ -42,7 +31,7 @@ export class AuthInterceptor implements HttpInterceptor {
    */
   private refreshSubject: Subject<boolean> = new Subject<boolean>();
 
-  constructor(private injector: Injector) {}
+  constructor(private injector: Injector) { }
 
   /**
    * Intercept an outgoing `HttpRequest`
@@ -82,13 +71,9 @@ export class AuthInterceptor implements HttpInterceptor {
   ): Observable<HttpEvent<any>> {
     const clone: HttpRequest<any> = original.clone();
 
-    return _catch(
-      switchMap(
-        this.request(clone),
-        (req: HttpRequest<any>) => delegate.handle(req)
-      ),
-      (res: HttpErrorResponse) => this.responseError(clone, res)
-    );
+    return this.request(clone)
+      .switchMap((req: HttpRequest<any>) => delegate.handle(req))
+      .catch((res: HttpErrorResponse) => this.responseError(clone, res));
   }
 
   /**
@@ -101,7 +86,7 @@ export class AuthInterceptor implements HttpInterceptor {
    *
    * @returns {Observable}
    */
-  private request(req: HttpRequest<any>): Observable<HttpRequest<any>|HttpEvent<any>> {
+  private request(req: HttpRequest<any>): Observable<HttpRequest<any> | HttpEvent<any>> {
     if (this.refreshInProgress) {
       return this.delayRequest(req);
     }
@@ -134,14 +119,14 @@ export class AuthInterceptor implements HttpInterceptor {
       authService
         .refreshToken()
         .subscribe(
-          () => {
-            this.refreshInProgress = false;
-            this.refreshSubject.next(true);
-          },
-          () => {
-            this.refreshInProgress = false;
-            this.refreshSubject.next(false)
-          }
+        () => {
+          this.refreshInProgress = false;
+          this.refreshSubject.next(true);
+        },
+        () => {
+          this.refreshInProgress = false;
+          this.refreshSubject.next(false)
+        }
         );
     }
 
@@ -149,7 +134,7 @@ export class AuthInterceptor implements HttpInterceptor {
       return this.delayRequest(req, res);
     }
 
-    return _throw(res);
+    return Observable.throw(res);
   }
 
   /**
@@ -165,25 +150,24 @@ export class AuthInterceptor implements HttpInterceptor {
     const authService: AuthService =
       this.injector.get<AuthService>(AUTH_SERVICE);
 
-    return first(map(
-      authService.getAccessToken(),
-      (token: string) => {
-        if (token) {
-          let headers : { [name: string]: string | string[] };
-          if(typeof authService.getHeaders === 'function') {
-            headers = authService.getHeaders(token);
-          } else {
-            headers = { Authorization: `Bearer ${token}` };
-          }
-
-          return req.clone({
-            setHeaders: headers
-          });
+    return authService.getAccessToken()
+      .map(token => {
+        if (!token) {
+          return req;
         }
 
-        return req;
-      }
-    ));
+        let headers: { [name: string]: string | string[] };
+        if (typeof authService.getHeaders === 'function') {
+          headers = authService.getHeaders(token);
+        } else {
+          headers = { Authorization: `Bearer ${token}` };
+        }
+
+        return req.clone({
+          setHeaders: headers
+        });
+      })
+      .first();
   }
 
   /**
@@ -204,15 +188,13 @@ export class AuthInterceptor implements HttpInterceptor {
     const http: HttpClient =
       this.injector.get<HttpClient>(HttpClient);
 
-    return switchMap(
-      first(this.refreshSubject),
-      (status: boolean) => {
+    return this.refreshSubject
+      .first()
+      .switchMap((status: boolean) => {
         if (status) {
           return http.request(req)
         }
-
-        return _throw(res || req)
-      }
-    );
+        return Observable.throw(res || req)
+      });
   }
 }

@@ -1,14 +1,6 @@
 import { Injectable, Inject } from '@angular/core';
-import {
-  Router,
-  CanActivate,
-  CanActivateChild,
-  ActivatedRouteSnapshot,
-  RouterStateSnapshot
-} from '@angular/router';
+import { Router, CanActivate, CanActivateChild, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
-
-import { map } from './rxjs.util';
 
 import { AuthService } from './auth.service';
 import { AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI } from './tokens';
@@ -47,16 +39,12 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
     _route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): Observable<boolean> {
-    return map(
-      this.authService .isAuthorized(),
-      (isAuthorized: boolean) => {
-
+    return this.authService.isAuthorized()
+      .map(isAuthorized => {
         if (!isAuthorized && !this.isPublicPage(state)) {
           this.navigate(this.publicFallbackPageUri);
-
           return false;
         }
-
         return true;
       }
     );
