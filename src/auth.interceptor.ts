@@ -140,12 +140,10 @@ export class AuthInterceptor implements HttpInterceptor {
           return req;
         }
 
-        let headers: { [name: string]: string | string[] };
-        if (typeof authService.getHeaders === 'function') {
-          headers = authService.getHeaders(token);
-        } else {
-          headers = { Authorization: `Bearer ${token}` };
-        }
+        let headers: { [name: string]: string | string[] } =
+          (typeof authService.getHeaders === 'function') ?
+            authService.getHeaders(token) :
+            { Authorization: `Bearer ${token}` };
 
         return req.clone({
           setHeaders: headers
