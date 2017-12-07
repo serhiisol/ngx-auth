@@ -27,6 +27,9 @@ class AuthenticationServiceStub implements AuthService {
   isAuthorized() {
     return Observable.of(true);
   }
+  userHasRole() {
+    return Observable.of(true);
+  }
   getAccessToken() {
     return Observable.of(TEST_TOKEN);
   }
@@ -39,6 +42,7 @@ class AuthenticationServiceStub implements AuthService {
   verifyTokenRequest(url: string) {
     return url === TEST_REFRESH_URI;
   }
+  goToLoginPage() { }
 }
 
 class CustomHeaderAuthenticationServiceStub extends AuthenticationServiceStub {

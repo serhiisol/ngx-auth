@@ -19,6 +19,8 @@ export abstract class AuthService {
    */
   public abstract isAuthorized(): Observable<boolean>;
 
+  public abstract userHasRole(role: string): Observable<boolean>;
+
   /**
    * Get access token
    *
@@ -68,6 +70,8 @@ export abstract class AuthService {
    * @returns {Observable<boolean>}
    */
   public abstract verifyTokenRequest(url: string): boolean;
+
+  public abstract goToLoginPage(): void;
 
   /**
    * Add token to headers, dependent on server

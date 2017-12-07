@@ -1,9 +1,9 @@
 import { Injectable, Inject } from '@angular/core';
-import { Router, CanActivate, CanActivateChild, ActivatedRouteSnapshot } from '@angular/router';
+import { CanActivate, CanActivateChild, ActivatedRouteSnapshot } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
 
 import { AuthService } from '../auth.service';
-import { AUTH_SERVICE, LOGIN_PAGE_URI } from '../tokens';
+import { AUTH_SERVICE } from '../tokens';
 
 /**
  * Guard, checks access token availability and allows or disallows access to page,
@@ -21,11 +21,7 @@ import { AUTH_SERVICE, LOGIN_PAGE_URI } from '../tokens';
 @Injectable()
 export class AuthGuard implements CanActivate, CanActivateChild {
 
-  constructor(
-    @Inject(AUTH_SERVICE) private authService: AuthService,
-    @Inject(LOGIN_PAGE_URI) private loginPageUri: string,
-    private router: Router
-  ) { }
+  constructor(@Inject(AUTH_SERVICE) private authService: AuthService) { }
 
   /**
    * CanActivate handler
@@ -35,12 +31,28 @@ export class AuthGuard implements CanActivate, CanActivateChild {
    *
    * @returns {Observable<boolean>}
    */
-  public canActivate(_route: ActivatedRouteSnapshot): Observable<boolean> {
+  public canActivate(route: ActivatedRouteSnapshot): Observable<boolean> {
     return this.authService.isAuthorized()
       .map(isAuthorized => {
         if (!isAuthorized) {
-          this.navigate(this.loginPageUri);
+          this.authService.goToLoginPage();
           return false;
+        }
+        if (route.data && route.data['roles'] && route.data['roles'].length > 0) {
+          let requiredRoles: string[] = route.data['roles'];
+          if (!this.checkRoles(requiredRoles)) {
+            // handleAccessDenied()
+            this.authService.goToLoginPage();
+            return false;
+          }
+        }
+        if (route.data && route.data['fn'] && route.data['fn'] instanceof Function) {
+          let fn: () => boolean = <() => boolean>route.data['fn'];
+          if (!fn()) {
+            // handleAccessDenied()
+            this.authService.goToLoginPage();
+            return false;
+          }
         }
         return true;
       });
@@ -58,18 +70,13 @@ export class AuthGuard implements CanActivate, CanActivateChild {
     return this.canActivate(route);
   }
 
-  /**
-   * Navigate away from the app / path
-   *
-   * @private
-   * @param {string} url
-   */
-  private navigate(url: string): void {
-    if (url.startsWith('http')) {
-      window.location.href = url;
-    } else {
-      this.router.navigateByUrl(url);
+  private checkRoles(requiredRoles: string[]) {
+    for (const role in requiredRoles) {
+      if (this.authService.userHasRole(role)) {
+        return true;
+      }
     }
+    return false;
   }
 
 }
