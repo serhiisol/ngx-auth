@@ -8,8 +8,8 @@ import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/switchMap';
 
-import { AuthService } from './auth.service';
-import { AUTH_SERVICE } from './tokens';
+import { AuthService } from '../auth.service';
+import { AUTH_SERVICE } from '../tokens';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {

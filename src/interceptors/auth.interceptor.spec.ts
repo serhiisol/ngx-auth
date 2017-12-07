@@ -4,8 +4,8 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/of';
 
-import { AuthService } from './auth.service';
-import { AUTH_SERVICE } from './tokens';
+import { AuthService } from '../auth.service';
+import { AUTH_SERVICE } from '../tokens';
 import { AuthInterceptor } from './auth.interceptor';
 
 const TEST_URI = 'TEST_URI';
