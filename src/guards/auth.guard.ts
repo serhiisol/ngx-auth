@@ -1,6 +1,7 @@
 import { Injectable, Inject } from '@angular/core';
 import { CanActivate, CanActivateChild, ActivatedRouteSnapshot } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/observable/forkJoin';
 
 import { AuthService } from '../auth.service';
 import { AUTH_SERVICE } from '../tokens';
@@ -33,28 +34,35 @@ export class AuthGuard implements CanActivate, CanActivateChild {
    */
   public canActivate(route: ActivatedRouteSnapshot): Observable<boolean> {
     return this.authService.isAuthorized()
-      .map(isAuthorized => {
+      .switchMap(isAuthorized => {
         if (!isAuthorized) {
           this.authService.goToLoginPage();
-          return false;
+          return Observable.of(false);
         }
         if (route.data && route.data['roles'] && route.data['roles'].length > 0) {
           let requiredRoles: string[] = route.data['roles'];
-          if (!this.checkRoles(requiredRoles)) {
-            // handleAccessDenied()
-            this.authService.goToLoginPage();
-            return false;
-          }
+          return this.checkRoles(requiredRoles)
+            .map(res => {
+              if (!res) {
+                // handleAccessDenied()
+                this.authService.goToLoginPage();
+                return false;
+              }
+              return true;
+            });
         }
         if (route.data && route.data['fn'] && route.data['fn'] instanceof Function) {
-          let fn: () => boolean = <() => boolean>route.data['fn'];
-          if (!fn()) {
-            // handleAccessDenied()
-            this.authService.goToLoginPage();
-            return false;
-          }
+          let fn: () => Observable<boolean> = <() => Observable<boolean>>route.data['fn'];
+          return fn().map(res => {
+            if (!res) {
+              // handleAccessDenied()
+              this.authService.goToLoginPage();
+              return false;
+            }
+            return true;
+          });
         }
-        return true;
+        return Observable.of(true);
       });
   }
 
@@ -70,13 +78,10 @@ export class AuthGuard implements CanActivate, CanActivateChild {
     return this.canActivate(route);
   }
 
-  private checkRoles(requiredRoles: string[]) {
-    for (const role in requiredRoles) {
-      if (this.authService.userHasRole(role)) {
-        return true;
-      }
-    }
-    return false;
+  private checkRoles(requiredRoles: string[]): Observable<boolean> {
+    return Observable.forkJoin(
+        requiredRoles.map(role => this.authService.userHasRole(role))
+      ).map(x => x.indexOf(true) !== -1);
   }
 
 }
