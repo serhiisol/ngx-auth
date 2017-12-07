@@ -41,12 +41,8 @@ export class AuthInterceptor implements HttpInterceptor {
    *
    * @returns {Observable<HttpEvent<*>>}
    */
-  public intercept(
-    req: HttpRequest<any>,
-    delegate: HttpHandler
-  ): Observable<HttpEvent<any>> {
-    const authService: AuthService =
-      this.injector.get<AuthService>(AUTH_SERVICE);
+  public intercept(req: HttpRequest<any>, delegate: HttpHandler): Observable<HttpEvent<any>> {
+    const authService: AuthService = this.injector.get<AuthService>(AUTH_SERVICE);
 
     if (authService.verifyTokenRequest(req.url)) {
       return delegate.handle(req);
@@ -65,10 +61,7 @@ export class AuthInterceptor implements HttpInterceptor {
    *
    * @returns {Observable<HttpEvent<*>>}
    */
-  private processIntercept(
-    original: HttpRequest<any>,
-    delegate: HttpHandler
-  ): Observable<HttpEvent<any>> {
+  private processIntercept(original: HttpRequest<any>, delegate: HttpHandler): Observable<HttpEvent<any>> {
     const clone: HttpRequest<any> = original.clone();
 
     return this.request(clone)
@@ -104,30 +97,21 @@ export class AuthInterceptor implements HttpInterceptor {
    *
    * @returns {Observable<HttpRequest<*>>}
    */
-  private responseError(
-    req: HttpRequest<any>,
-    res: HttpErrorResponse
-  ): Observable<HttpEvent<any>> {
-    const authService: AuthService =
-      this.injector.get<AuthService>(AUTH_SERVICE);
-    const refreshShouldHappen: boolean =
-      authService.refreshShouldHappen(res);
+  private responseError(req: HttpRequest<any>, res: HttpErrorResponse): Observable<HttpEvent<any>> {
+    const authService: AuthService = this.injector.get<AuthService>(AUTH_SERVICE);
+    const refreshShouldHappen: boolean = authService.refreshShouldHappen(res);
 
     if (refreshShouldHappen && !this.refreshInProgress) {
       this.refreshInProgress = true;
 
-      authService
-        .refreshToken()
-        .subscribe(
-        () => {
+      authService.refreshToken()
+        .subscribe(() => {
           this.refreshInProgress = false;
           this.refreshSubject.next(true);
-        },
-        () => {
+        }, () => {
           this.refreshInProgress = false;
           this.refreshSubject.next(false)
-        }
-        );
+        });
     }
 
     if (refreshShouldHappen && this.refreshInProgress) {
@@ -147,8 +131,7 @@ export class AuthInterceptor implements HttpInterceptor {
    * @returns {Observable<HttpRequest<*>>}
    */
   private addToken(req: HttpRequest<any>): Observable<HttpRequest<any>> {
-    const authService: AuthService =
-      this.injector.get<AuthService>(AUTH_SERVICE);
+    const authService: AuthService = this.injector.get<AuthService>(AUTH_SERVICE);
 
     return authService.getAccessToken()
       .map(token => {
@@ -181,12 +164,8 @@ export class AuthInterceptor implements HttpInterceptor {
    *
    * @returns {Observable<HttpRequest<*>>}
    */
-  private delayRequest(
-    req: HttpRequest<any>,
-    res?: HttpErrorResponse
-  ): Observable<HttpEvent<any>> {
-    const http: HttpClient =
-      this.injector.get<HttpClient>(HttpClient);
+  private delayRequest(req: HttpRequest<any>, res?: HttpErrorResponse): Observable<HttpEvent<any>> {
+    const http: HttpClient = this.injector.get<HttpClient>(HttpClient);
 
     return this.refreshSubject
       .first()
