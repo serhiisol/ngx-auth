@@ -22,10 +22,10 @@ import { AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI } from './tokens';
 export class ProtectedGuard implements CanActivate, CanActivateChild {
 
   constructor(
-    @Inject(AUTH_SERVICE)private authService: AuthService,
+    @Inject(AUTH_SERVICE) private authService: AuthService,
     @Inject(PUBLIC_FALLBACK_PAGE_URI) private publicFallbackPageUri: string,
     private router: Router
-  ) {}
+  ) { }
 
   /**
    * CanActivate handler
@@ -35,10 +35,7 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
    *
    * @returns {Observable<boolean>}
    */
-  public canActivate(
-    _route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot
-  ): Observable<boolean> {
+  public canActivate(_route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
     return this.authService.isAuthorized()
       .map(isAuthorized => {
         if (!isAuthorized && !this.isPublicPage(state)) {
@@ -46,8 +43,7 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
           return false;
         }
         return true;
-      }
-    );
+      });
   }
 
   /**
@@ -58,10 +54,7 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
    *
    * @returns {Observable<boolean>}
    */
-  public canActivateChild(
-    route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot
-  ): Observable<boolean> {
+  public canActivateChild(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
     return this.canActivate(route, state);
   }
 

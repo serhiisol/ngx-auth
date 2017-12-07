@@ -25,7 +25,7 @@ export class PublicGuard implements CanActivate, CanActivateChild {
     @Inject(AUTH_SERVICE) private authService: AuthService,
     @Inject(PROTECTED_FALLBACK_PAGE_URI) private protectedFallbackPageUri: string,
     private router: Router
-  ) {}
+  ) { }
 
   /**
    * CanActivate handler
@@ -35,10 +35,7 @@ export class PublicGuard implements CanActivate, CanActivateChild {
    *
    * @returns {Observable<boolean>}
    */
-  public canActivate(
-    _route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot
-  ): Observable<boolean> {
+  public canActivate(_route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
     return this.authService.isAuthorized()
       .map(isAuthorized => {
         if (isAuthorized && !this.isProtectedPage(state)) {
@@ -57,10 +54,7 @@ export class PublicGuard implements CanActivate, CanActivateChild {
    *
    * @returns {Observable<boolean>}
    */
-  public canActivateChild(
-    route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot
-  ): Observable<boolean> {
+  public canActivateChild(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
     return this.canActivate(route, state);
   }
 
