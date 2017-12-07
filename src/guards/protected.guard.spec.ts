@@ -3,8 +3,8 @@ import { Router, RouterStateSnapshot } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/of';
 
-import { AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI } from './tokens';
-import { AuthService } from './auth.service';
+import { AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI } from '../tokens';
+import { AuthService } from '../auth.service';
 import { ProtectedGuard } from './protected.guard';
 
 const RouterStub = {
