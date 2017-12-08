@@ -1,18 +1,11 @@
 import { TestBed, inject, fakeAsync, tick } from '@angular/core/testing';
-import {
-  HttpClient,
-  HTTP_INTERCEPTORS,
-  HttpErrorResponse
-} from '@angular/common/http';
-import {
-  HttpClientTestingModule,
-  HttpTestingController
-} from '@angular/common/http/testing';
+import { HttpClient, HTTP_INTERCEPTORS, HttpErrorResponse } from '@angular/common/http';
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { Observable } from 'rxjs/Observable';
-import { of } from 'rxjs/observable/of';
+import 'rxjs/add/observable/of';
 
-import { AuthService } from './auth.service';
-import { AUTH_SERVICE } from './tokens';
+import { AuthService } from '../auth.service';
+import { AUTH_SERVICE } from '../tokens';
 import { AuthInterceptor } from './auth.interceptor';
 
 const TEST_URI = 'TEST_URI';
@@ -32,13 +25,16 @@ function ObservableDelay<T>(val: T, delay: number, cb = () => {}): Observable<an
 
 class AuthenticationServiceStub implements AuthService {
   isAuthorized() {
-    return of(true);
+    return Observable.of(true);
+  }
+  userHasRole() {
+    return Observable.of(true);
   }
   getAccessToken() {
-    return of(TEST_TOKEN);
+    return Observable.of(TEST_TOKEN);
   }
   refreshToken() {
-    return of(TEST_TOKEN);
+    return Observable.of(TEST_TOKEN);
   }
   refreshShouldHappen(e: HttpErrorResponse) {
     return e.status === 401;
@@ -46,6 +42,7 @@ class AuthenticationServiceStub implements AuthService {
   verifyTokenRequest(url: string) {
     return url === TEST_REFRESH_URI;
   }
+  goToLoginPage() { }
 }
 
 class CustomHeaderAuthenticationServiceStub extends AuthenticationServiceStub {

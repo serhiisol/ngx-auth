@@ -1,14 +1,12 @@
 import { NgModule } from '@angular/core';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 
-import { PublicGuard } from './public.guard';
-import { ProtectedGuard } from './protected.guard';
-import { AuthInterceptor } from './auth.interceptor';
+import { AuthGuard } from './guards/auth.guard';
+import { AuthInterceptor } from './interceptors/auth.interceptor';
 
 @NgModule({
   providers: [
-    PublicGuard,
-    ProtectedGuard,
+    AuthGuard,
     AuthInterceptor,
     {
       provide: HTTP_INTERCEPTORS,
@@ -17,5 +15,4 @@ import { AuthInterceptor } from './auth.interceptor';
     }
   ]
 })
-export class AuthModule {
-}
+export class AuthModule { }
