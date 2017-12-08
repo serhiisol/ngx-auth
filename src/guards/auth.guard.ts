@@ -2,6 +2,8 @@ import { Injectable, Inject } from '@angular/core';
 import { CanActivate, CanActivateChild, ActivatedRouteSnapshot } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/forkJoin';
+import 'rxjs/add/observable/of';
+import 'rxjs/add/operator/switchMap';
 
 import { AuthService } from '../auth.service';
 import { AUTH_SERVICE } from '../tokens';
