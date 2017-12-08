@@ -83,7 +83,7 @@ export class AuthGuard implements CanActivate, CanActivateChild {
   private checkRoles(requiredRoles: string[]): Observable<boolean> {
     return Observable.forkJoin(
         requiredRoles.map(role => this.authService.userHasRole(role))
-      ).map(x => x.indexOf(true) !== -1);
+      ).map(x => x.some(x => x));
   }
 
 }
