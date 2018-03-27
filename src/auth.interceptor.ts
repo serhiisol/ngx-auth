@@ -7,16 +7,9 @@ import {
   HttpRequest,
   HttpErrorResponse
 } from '@angular/common/http';
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
 
-import {
-  map,
-  first,
-  switchMap,
-  _throw,
-  _catch
-} from './rxjs.util';
+import { Observable, Subject, throwError } from 'rxjs';
+import { map, switchMap, first, catchError } from 'rxjs/operators';
 
 import { AuthService } from './auth.service';
 import { AUTH_SERVICE } from './tokens';
@@ -82,12 +75,12 @@ export class AuthInterceptor implements HttpInterceptor {
   ): Observable<HttpEvent<any>> {
     const clone: HttpRequest<any> = original.clone();
 
-    return _catch(
+    return this.request(clone).pipe(
       switchMap(
-        this.request(clone),
-        (req: HttpRequest<any>) => delegate.handle(req)
+        (req: HttpRequest<any>) =>
+          delegate.handle(req) as Observable<HttpEvent<any>>
       ),
-      (res: HttpErrorResponse) => this.responseError(clone, res)
+      catchError((res: HttpErrorResponse) => this.responseError(clone, res))
     );
   }
 
@@ -149,7 +142,7 @@ export class AuthInterceptor implements HttpInterceptor {
       return this.delayRequest(req, res);
     }
 
-    return _throw(res);
+    return throwError(res);
   }
 
   /**
@@ -165,12 +158,11 @@ export class AuthInterceptor implements HttpInterceptor {
     const authService: AuthService =
       this.injector.get<AuthService>(AUTH_SERVICE);
 
-    return first(map(
-      authService.getAccessToken(),
-      (token: string) => {
+    return authService.getAccessToken().pipe(
+      map((token: string) => {
         if (token) {
-          let headers : { [name: string]: string | string[] };
-          if(typeof authService.getHeaders === 'function') {
+          let headers: { [name: string]: string | string[] };
+          if (typeof authService.getHeaders === 'function') {
             headers = authService.getHeaders(token);
           } else {
             headers = { Authorization: `Bearer ${token}` };
@@ -182,8 +174,9 @@ export class AuthInterceptor implements HttpInterceptor {
         }
 
         return req;
-      }
-    ));
+      }),
+      first(),
+    );
   }
 
   /**
@@ -204,15 +197,15 @@ export class AuthInterceptor implements HttpInterceptor {
     const http: HttpClient =
       this.injector.get<HttpClient>(HttpClient);
 
-    return switchMap(
-      first(this.refreshSubject),
-      (status: boolean) => {
+    return this.refreshSubject.pipe(
+      first(),
+      switchMap((status: boolean) => {
         if (status) {
-          return http.request(req)
+          return http.request(req);
         }
 
-        return _throw(res || req)
-      }
+        return throwError(res || req);
+      })
     );
   }
 }

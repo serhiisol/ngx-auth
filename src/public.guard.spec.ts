@@ -1,6 +1,6 @@
 import { TestBed, inject, async } from '@angular/core/testing';
 import { Router, RouterStateSnapshot } from '@angular/router';
-import { of as ObservableOf } from 'rxjs/observable/of';
+import { of as ObservableOf } from 'rxjs';
 
 import { AUTH_SERVICE, PROTECTED_FALLBACK_PAGE_URI } from './tokens';
 import { AuthService } from './auth.service';
