@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 
 /**
  * Essential service for authentication
@@ -69,7 +69,6 @@ export abstract class AuthService {
    */
   public abstract verifyTokenRequest(url: string): boolean;
 
-
   /**
    * Add token to headers, dependent on server
    * set-up, by default adds a bearer token.
@@ -83,5 +82,5 @@ export abstract class AuthService {
    *
    * @returns {[name: string]: string | string[]}
    */
-  public abstract getHeaders?(token: string) : { [name: string]: string | string[] };
+  public abstract getHeaders?(token: string): { [name: string]: string | string[] };
 }
