@@ -48,64 +48,6 @@ class AuthenticationServiceStub implements AuthService {
   }
 }
 
-class CustomHeaderAuthenticationServiceStub extends AuthenticationServiceStub {
-  public getHeaders(token: string) : any {
-    return { 'x-auth-token': token };
-  }
-}
-
-describe('AuthInterceptor', () => {
-  let http: HttpClient;
-  let service: AuthService;
-  let controller: HttpTestingController;
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      imports: [ HttpClientTestingModule ],
-      providers: [
-        {
-          provide: AUTH_SERVICE,
-          useClass: CustomHeaderAuthenticationServiceStub
-        },
-        {
-          provide: HTTP_INTERCEPTORS,
-          useClass: AuthInterceptor,
-          multi: true,
-        }
-      ]
-    });
-  });
-
-  beforeEach(inject(
-    [ HttpClient, HttpTestingController, AUTH_SERVICE ],
-    (
-      _http: HttpClient,
-      _controller: HttpTestingController,
-      _service: AuthService
-    ) => {
-      http = _http;
-      controller = _controller;
-      service = _service;
-    }
-  ));
-
-  describe('with request', () => {
-    it('should customize the authorization headers', () => {
-      http.get(TEST_URI).subscribe(data => {
-        expect(data['name']).toEqual('Test_Data');
-      }, fail);
-
-      const req = controller.expectOne(TEST_URI);
-
-      expect(req.request.url).toBe(TEST_URI);
-      expect(req.request.headers.get('x-auth-token')).toBe(TEST_TOKEN);
-
-      req.flush({name: 'Test_Data'});
-    });
-
-  });
-});
-
 describe('AuthInterceptor', () => {
   let http: HttpClient;
   let service: AuthService;
@@ -145,7 +87,7 @@ describe('AuthInterceptor', () => {
 
     it('should pass request normally', () => {
       http.get(TEST_URI).subscribe(data => {
-        expect(data['name']).toEqual('Test_Data');
+        expect(data).toEqual({ name: 'Test_Data' });
       }, fail);
 
       const req = controller.expectOne(TEST_URI);
@@ -165,34 +107,26 @@ describe('AuthInterceptor', () => {
         expect(e.status).toBe(400);
       });
 
-      const req = controller.expectOne(TEST_URI);
-
-      expect(req.request.url).toBe(TEST_URI);
-
-      req.error(new ErrorEvent('400'), { status: 400 });
+      controller
+        .expectOne(TEST_URI)
+        .error(new ErrorEvent('400'), { status: 400 });
     });
 
     it('should trigger refresh request after failed original request and retry original', fakeAsync(() => {
       spyOn(service, 'refreshToken').and.returnValue(ObservableDelay(TEST_TOKEN, 1000, () => {
-        const req = controller.expectOne(TEST_URI);
-
-        expect(req.request.url).toBe(TEST_URI);
-        expect(req.request.headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
-
-        req.flush({name: 'Test_Data'});
+        controller
+          .expectOne(TEST_URI)
+          .flush({ name: 'Test_Data' });
       }));
 
       http.get(TEST_URI).subscribe((data) => {
-        expect(data['name']).toEqual('Test_Data');
+        expect(data).toEqual({ name: 'Test_Data' });
         expect(service.refreshToken).toHaveBeenCalled();
       }, fail);
 
-      const req = controller.expectOne(TEST_URI);
-
-      expect(req.request.url).toBe(TEST_URI);
-      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
-
-      req.error(new ErrorEvent('401'), { status: 401 });
+      controller
+        .expectOne(TEST_URI)
+        .error(new ErrorEvent('401'), { status: 401 });
 
       tick(1000);
     }));
@@ -201,47 +135,130 @@ describe('AuthInterceptor', () => {
 
   describe('with delaying', () => {
 
-    it('should delay requests if refresh is in progress', fakeAsync(() => {
-      const executed = [];
-
+    it('should delay and then retry requests if one of requests fails when refreshShouldHappen', fakeAsync(() => {
       spyOn(service, 'refreshToken').and.returnValue(ObservableDelay(TEST_TOKEN, 1000, () => {
-        const req = controller.expectOne(TEST_URI);
+        controller
+          .expectOne(TEST_URI)
+          .flush({name: 'Test_Data'});
 
-        expect(req.request.url).toBe(TEST_URI);
-        expect(req.request.headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
-
-        req.flush({name: 'Test_Data'});
+        controller
+          .expectOne(TEST_URI2)
+          .flush({name: 'Test_Data2'});
       }));
 
       http.get(TEST_URI).subscribe((data) => {
-        expect(data['name']).toEqual('Test_Data');
+        expect(data).toEqual({ name: 'Test_Data' });
         expect(service.refreshToken).toHaveBeenCalled();
-        executed.push(TEST_URI);
       }, fail);
-
-      const req = controller.expectOne(TEST_URI);
-
-      expect(req.request.url).toBe(TEST_URI);
-      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
-
-      req.error(new ErrorEvent('401'), { status: 401 });
-
-      tick(500);
 
       http.get(TEST_URI2).subscribe(data => {
-        expect(data['name']).toEqual('Test_Data2');
-        executed.push(TEST_URI2);
-        expect(executed.length).toBe(2);
+        expect(data).toEqual({ name: 'Test_Data2' });
       }, fail);
+
+      controller
+        .expectOne(TEST_URI)
+        .error(new ErrorEvent('401'), { status: 401 });
 
       tick(500);
 
       controller
         .expectOne(TEST_URI2)
-        .flush({name: 'Test_Data2'});
+        .error(new ErrorEvent('401'), { status: 401 });
 
+      tick(500);
+
+      controller.verify();
+    }));
+
+    it('should delay upcoming requests if refresh is in progress', fakeAsync(() => {
+      spyOn(service, 'refreshToken').and.returnValue(ObservableDelay(TEST_TOKEN, 1000, () => {
+        controller
+          .expectOne(TEST_URI)
+          .flush({name: 'Test_Data'});
+
+        controller
+          .expectOne(TEST_URI2)
+          .flush({name: 'Test_Data2'});
+      }));
+
+      http.get(TEST_URI).subscribe((data) => {
+        expect(data).toEqual({ name: 'Test_Data' });
+        expect(service.refreshToken).toHaveBeenCalled();
+      }, fail);
+
+      controller
+        .expectOne(TEST_URI)
+        .error(new ErrorEvent('401'), { status: 401 });
+
+      tick(500);
+
+      http.get(TEST_URI2).subscribe(data => {
+        expect(data).toEqual({ name: 'Test_Data2' });
+      }, fail);
+
+      // At this point second request is delayed and won't be registered in http
+
+      controller.expectNone(TEST_URI2);
+
+      tick(500);
+
+      controller.verify();
     }));
 
   });
 
+});
+
+class CustomHeaderAuthenticationServiceStub extends AuthenticationServiceStub {
+  public getHeaders(token: string): any {
+    return { 'x-auth-token': token };
+  }
+}
+
+describe('AuthInterceptor', () => {
+  let http: HttpClient;
+  let controller: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [ HttpClientTestingModule ],
+      providers: [
+        {
+          provide: AUTH_SERVICE,
+          useClass: CustomHeaderAuthenticationServiceStub
+        },
+        {
+          provide: HTTP_INTERCEPTORS,
+          useClass: AuthInterceptor,
+          multi: true,
+        }
+      ]
+    });
+  });
+
+  beforeEach(inject(
+    [ HttpClient, HttpTestingController ],
+    (
+      _http: HttpClient,
+      _controller: HttpTestingController
+    ) => {
+      http = _http;
+      controller = _controller;
+    }
+  ));
+
+  describe('with custom headers', () => {
+    it('should customize the authorization headers', () => {
+      http.get(TEST_URI).subscribe(data => {
+        expect(data).toEqual({ name: 'Test_Data' });
+      }, fail);
+
+      const req = controller.expectOne(TEST_URI);
+
+      expect(req.request.headers.get('x-auth-token')).toBe(TEST_TOKEN);
+
+      req.flush({name: 'Test_Data'});
+    });
+
+  });
 });

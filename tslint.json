@@ -21,8 +21,25 @@
     "member-access": false,
     "member-ordering": [
       true,
-      "static-before-instance",
-      "variables-before-functions"
+      {
+        "order": [
+          "public-static-field",
+          "protected-static-field",
+          "private-static-field",
+          "public-static-method",
+          "protected-static-method",
+          "private-static-method",
+          "public-instance-field",
+          "protected-instance-field",
+          "private-instance-field",
+          "public-constructor",
+          "protected-constructor",
+          "private-constructor",
+          "public-instance-method",
+          "protected-instance-method",
+          "private-instance-method"
+        ]
+      }
     ],
     "no-arg": true,
     "no-bitwise": true,
@@ -60,9 +77,7 @@
       "single"
     ],
     "radix": true,
-    "semicolon": [
-      "always"
-    ],
+    "semicolon": true,
     "triple-equals": [
       true,
       "allow-null-check"
@@ -95,7 +110,9 @@
     "interface-name": [true, "never-prefix"],
 
     "no-angle-bracket-type-assertion": false,
-    "prefer-const": false,
-    "no-object-literal-type-assertion": false
+    "prefer-const": true,
+    "prefer-conditional-expression": false,
+    "no-object-literal-type-assertion": false,
+    "max-classes-per-file": false
   }
 }

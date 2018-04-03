@@ -20,11 +20,6 @@ import { AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI } from './tokens';
  * usage: { path: 'test', component: TestComponent, canActivate: [ AuthGuard ] }
  *
  * @export
- *
- * @class ProtectedGuard
- *
- * @implements {CanActivate}
- * @implements {CanActivateChild}
  */
 @Injectable()
 export class ProtectedGuard implements CanActivate, CanActivateChild {
@@ -37,11 +32,6 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
 
   /**
    * CanActivate handler
-   *
-   * @param {ActivatedRouteSnapshot} _route
-   * @param {RouterStateSnapshot} state
-   *
-   * @returns {Observable<boolean>}
    */
   public canActivate(
     _route: ActivatedRouteSnapshot,
@@ -64,11 +54,6 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
 
   /**
    * CanActivateChild handler
-   *
-   * @param {ActivatedRouteSnapshot} route
-   * @param {RouterStateSnapshot} state
-   *
-   * @returns {Observable<boolean>}
    */
   public canActivateChild(
     route: ActivatedRouteSnapshot,
@@ -79,12 +64,6 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
 
   /**
    * Check, if current page is public fallback page
-   *
-   * @private
-   *
-   * @param {RouterStateSnapshot} state
-   *
-   * @returns {boolean}
    */
   private isPublicPage(state: RouterStateSnapshot): boolean {
     return state.url === this.publicFallbackPageUri;
@@ -92,9 +71,6 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
 
   /**
    * Navigate away from the app / path
-   *
-   * @private
-   * @param {string} url
    */
   private navigate(url: string): void {
     if (url.startsWith('http')) {
