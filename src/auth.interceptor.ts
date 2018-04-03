@@ -26,19 +26,11 @@ export class AuthInterceptor implements HttpInterceptor {
 
   /**
    * Is refresh token is being executed
-   *
-   * @private
-   *
-   * @type {boolean}
    */
   private refreshInProgress = false;
 
   /**
    * Notify all outstanding requests through this subject
-   *
-   * @private
-   *
-   * @type {Subject<boolean>}
    */
   private refreshSubject: Subject<boolean> = new Subject<boolean>();
 
@@ -46,11 +38,6 @@ export class AuthInterceptor implements HttpInterceptor {
 
   /**
    * Intercept an outgoing `HttpRequest`
-   *
-   * @param {HttpRequest<*>} req
-   * @param {HttpHandler} delegate
-   *
-   * @returns {Observable<HttpEvent<*>>}
    */
   public intercept(
     req: HttpRequest<any>,
@@ -68,13 +55,6 @@ export class AuthInterceptor implements HttpInterceptor {
 
   /**
    * Process all the requests via custom interceptors.
-   *
-   * @private
-   *
-   * @param {HttpRequest<*>} original
-   * @param {HttpHandler} delegate
-   *
-   * @returns {Observable<HttpEvent<*>>}
    */
   private processIntercept(
     original: HttpRequest<any>,
@@ -94,12 +74,6 @@ export class AuthInterceptor implements HttpInterceptor {
   /**
    * Request interceptor. Delays request if refresh is in progress
    * otherwise adds token to the headers
-   *
-   * @private
-   *
-   * @param {HttpRequest<*>} req
-   *
-   * @returns {Observable}
    */
   private request(req: HttpRequest<any>): Observable<HttpRequest<any>> {
     if (this.refreshInProgress) {
@@ -111,13 +85,6 @@ export class AuthInterceptor implements HttpInterceptor {
 
   /**
    * Failed request interceptor, check if it has to be processed with refresh
-   *
-   * @private
-   *
-   * @param {HttpRequest<*>} req
-   * @param {HttpErrorResponse} res
-   *
-   * @returns {Observable<HttpRequest<*>>}
    */
   private responseError(
     req: HttpRequest<any>,
@@ -154,12 +121,6 @@ export class AuthInterceptor implements HttpInterceptor {
 
   /**
    * Add access token to headers or the request
-   *
-   * @private
-   *
-   * @param {HttpRequest<*>} req
-   *
-   * @returns {Observable<HttpRequest<*>>}
    */
   private addToken(req: HttpRequest<any>): Observable<HttpRequest<any>> {
     const authService: AuthService =
@@ -188,13 +149,6 @@ export class AuthInterceptor implements HttpInterceptor {
   /**
    * Delay request, by subscribing on refresh event, once it finished, process it
    * otherwise throw error
-   *
-   * @private
-   *
-   * @param {HttpRequest<*>} req
-   * @param {HttpErrorResponse} [res]
-   *
-   * @returns {Observable<HttpRequest<*>>}
    */
   private delayRequest(req: HttpRequest<any>): Observable<HttpRequest<any>> {
     return switchMap(
@@ -206,13 +160,6 @@ export class AuthInterceptor implements HttpInterceptor {
   /**
    * Retry request, by subscribing on refresh event, once it finished, process it
    * otherwise throw error
-   *
-   * @private
-   *
-   * @param {HttpRequest<*>} req
-   * @param {HttpErrorResponse} res
-   *
-   * @returns {Observable<HttpRequest<*>>}
    */
   private retryRequest(
     req: HttpRequest<any>,

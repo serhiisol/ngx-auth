@@ -4,7 +4,6 @@ import { Observable } from 'rxjs/Observable';
 /**
  * Essential service for authentication
  * @export
- * @interface AuthService
  */
 export abstract class AuthService {
 
@@ -12,10 +11,6 @@ export abstract class AuthService {
    * Check, if user already authorized.
    *
    * Should return Observable with true or false values
-   *
-   * @public
-   *
-   * @returns {Observable<boolean>}
    */
   public abstract isAuthorized(): Observable<boolean>;
 
@@ -24,10 +19,6 @@ export abstract class AuthService {
    *
    * Should return access token in Observable from e.g.
    * localStorage
-   *
-   * @public
-   *
-   * @returns {Observable<string>}
    */
   public abstract getAccessToken(): Observable<string>;
 
@@ -36,10 +27,6 @@ export abstract class AuthService {
    *
    * Should be successfully completed so interceptor
    * can execute pending requests or retry original one
-   *
-   * @public
-   *
-   * @returns {Observable<*>}
    */
   public abstract refreshToken(): Observable<any>;
 
@@ -48,24 +35,12 @@ export abstract class AuthService {
    * whether token be refreshed or not.
    *
    * Essentially checks status
-   *
-   * @public
-   *
-   * @param {HttpErrorResponse} response
-   *
-   * @returns {Observable<boolean>}
    */
   public abstract refreshShouldHappen(response: HttpErrorResponse): boolean;
 
   /**
    * Verify that outgoing request is refresh-token,
    * so interceptor won't intercept this request
-   *
-   * @public
-   *
-   * @param {string} url
-   *
-   * @returns {Observable<boolean>}
    */
   public abstract verifyTokenRequest(url: string): boolean;
 
@@ -75,12 +50,6 @@ export abstract class AuthService {
    * Called by interceptor.
    *
    * To change behavior, override this method.
-   *
-   * @public
-   *
-   * @param {string} token
-   *
-   * @returns {[name: string]: string | string[]}
    */
   public abstract getHeaders?(token: string): { [name: string]: string | string[] };
 }
