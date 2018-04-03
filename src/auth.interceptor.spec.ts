@@ -135,9 +135,7 @@ describe('AuthInterceptor', () => {
 
   describe('with delaying', () => {
 
-    it('should delay and then retry requests if one of requests fails when refresh should happen', fakeAsync(() => {
-      const executed = [];
-
+    it('should delay and then retry requests if one of requests fails when refreshShouldHappen', fakeAsync(() => {
       spyOn(service, 'refreshToken').and.returnValue(ObservableDelay(TEST_TOKEN, 1000, () => {
         controller
           .expectOne(TEST_URI)
@@ -151,12 +149,10 @@ describe('AuthInterceptor', () => {
       http.get(TEST_URI).subscribe((data) => {
         expect(data).toEqual({ name: 'Test_Data' });
         expect(service.refreshToken).toHaveBeenCalled();
-        executed.push(TEST_URI);
       }, fail);
 
       http.get(TEST_URI2).subscribe(data => {
         expect(data).toEqual({ name: 'Test_Data2' });
-        executed.push(TEST_URI2);
       }, fail);
 
       controller
@@ -172,13 +168,9 @@ describe('AuthInterceptor', () => {
       tick(500);
 
       controller.verify();
-
-      expect(executed.length).toBe(2);
     }));
 
-    fit('should delay requests if refresh is in progress', fakeAsync(() => {
-      const executed = [];
-
+    it('should delay upcoming requests if refresh is in progress', fakeAsync(() => {
       spyOn(service, 'refreshToken').and.returnValue(ObservableDelay(TEST_TOKEN, 1000, () => {
         controller
           .expectOne(TEST_URI)
@@ -192,35 +184,25 @@ describe('AuthInterceptor', () => {
       http.get(TEST_URI).subscribe((data) => {
         expect(data).toEqual({ name: 'Test_Data' });
         expect(service.refreshToken).toHaveBeenCalled();
-        executed.push(TEST_URI);
       }, fail);
 
-      const req = controller.expectOne(TEST_URI);
-
-      expect(req.request.url).toBe(TEST_URI);
-      expect(req.request.headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
-
-      req.error(new ErrorEvent('401'), { status: 401 });
+      controller
+        .expectOne(TEST_URI)
+        .error(new ErrorEvent('401'), { status: 401 });
 
       tick(500);
 
       http.get(TEST_URI2).subscribe(data => {
         expect(data).toEqual({ name: 'Test_Data2' });
-        executed.push(TEST_URI2);
       }, fail);
 
-      const req2 = controller.expectOne(TEST_URI2);
+      // At this point second request is delayed and won't be registered in http
 
-      expect(req2.request.url).toBe(TEST_URI2);
-      expect(req2.request.headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
-
-      req2.error(new ErrorEvent('401'), { status: 401 });
+      controller.expectNone(TEST_URI2);
 
       tick(500);
 
       controller.verify();
-
-      expect(executed.length).toBe(2);
     }));
 
   });
@@ -265,7 +247,7 @@ describe('AuthInterceptor', () => {
     }
   ));
 
-  describe('with request', () => {
+  describe('with custom headers', () => {
     it('should customize the authorization headers', () => {
       http.get(TEST_URI).subscribe(data => {
         expect(data).toEqual({ name: 'Test_Data' });
