@@ -6,9 +6,8 @@ import {
   ActivatedRouteSnapshot,
   RouterStateSnapshot
 } from '@angular/router';
-import { Observable } from 'rxjs/Observable';
-
-import { map } from './rxjs.util';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { AuthService } from './auth.service';
 import { AUTH_SERVICE, PROTECTED_FALLBACK_PAGE_URI } from './tokens';
@@ -37,10 +36,8 @@ export class PublicGuard implements CanActivate, CanActivateChild {
     _route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): Observable<boolean> {
-    return map(
-      this.authService.isAuthorized(),
-      (isAuthorized: boolean) => {
-
+    return this.authService.isAuthorized()
+      .pipe(map((isAuthorized: boolean) => {
         if (isAuthorized && !this.isProtectedPage(state)) {
           this.navigate(this.protectedFallbackPageUri);
 
@@ -48,8 +45,7 @@ export class PublicGuard implements CanActivate, CanActivateChild {
         }
 
         return true;
-      }
-    );
+      }));
   }
 
   /**
