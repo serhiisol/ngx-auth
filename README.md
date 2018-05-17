@@ -1,11 +1,14 @@
-# Angular 5+ Authentication
+# Angular 6+ Authentication
 
 This package provides authentication module with interceptor
 
-> Package is given in completely 100% pure TypeScript.
-
 ```
 npm install ngx-auth --save
+```
+
+Note: If you want to use library for angular 5, use version 3.1.0
+```
+npm install ngx-auth@3.1.0 --save
 ```
 
 Note: If you want to use library for angular 4, use version 2.2.0

@@ -1,6 +1,6 @@
 import { TestBed, inject, async } from '@angular/core/testing';
 import { Router, RouterStateSnapshot } from '@angular/router';
-import { of as ObservableOf } from 'rxjs/observable/of';
+import { of } from 'rxjs';
 
 import { AUTH_SERVICE, PROTECTED_FALLBACK_PAGE_URI } from './tokens';
 import { AuthService } from './auth.service';
@@ -35,7 +35,7 @@ describe('PublicGuard', () => {
 
   beforeEach(inject(
     [PublicGuard, Router, AUTH_SERVICE],
-    (_publicGuard: PublicGuard, _router: Router, _authService: AuthService ) => {
+    (_publicGuard: PublicGuard, _router: Router, _authService: AuthService) => {
       publicGuard = _publicGuard;
       router = _router;
       authService = _authService;
@@ -49,7 +49,7 @@ describe('PublicGuard', () => {
   });
 
   it('should activate public route for not authenticated user', async(() => {
-    spyOn(authService, 'isAuthorized').and.returnValue( ObservableOf(false) );
+    spyOn(authService, 'isAuthorized').and.returnValue(of(false));
 
     publicGuard
       .canActivate(null, <RouterStateSnapshot>{ url: RESET_PAGE })
@@ -65,14 +65,14 @@ describe('PublicGuard', () => {
   }));
 
   it('should not activate public route for authenticated user', async(() => {
-    spyOn(authService, 'isAuthorized').and.returnValue( ObservableOf(true) );
+    spyOn(authService, 'isAuthorized').and.returnValue(of(true));
 
     publicGuard
       .canActivate(null, <RouterStateSnapshot>{ url: RESET_PAGE })
       .subscribe(
         status => {
           expect(status).toBeFalsy();
-          expect(router.navigateByUrl).toHaveBeenCalledWith( HOME_PAGE );
+          expect(router.navigateByUrl).toHaveBeenCalledWith(HOME_PAGE);
         },
         () => {
           throw new Error('should not be called');

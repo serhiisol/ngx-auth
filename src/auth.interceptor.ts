@@ -7,16 +7,8 @@ import {
   HttpRequest,
   HttpErrorResponse
 } from '@angular/common/http';
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
-
-import {
-  map,
-  first,
-  switchMap,
-  _throw,
-  _catch
-} from './rxjs.util';
+import { Subject, Observable, throwError } from 'rxjs';
+import { map, first, switchMap, catchError } from 'rxjs/operators';
 
 import { AuthService } from './auth.service';
 import { AUTH_SERVICE } from './tokens';
@@ -62,13 +54,11 @@ export class AuthInterceptor implements HttpInterceptor {
   ): Observable<HttpEvent<any>> {
     const clone: HttpRequest<any> = original.clone();
 
-    return _catch(
-      switchMap(
-        this.request(clone),
-        (req: HttpRequest<any>) => delegate.handle(req)
-      ),
-      (res: HttpErrorResponse) => this.responseError(clone, res)
-    );
+    return this.request(clone)
+      .pipe(
+        switchMap((req: HttpRequest<any>) => delegate.handle(req)),
+        catchError((res: HttpErrorResponse) => this.responseError(clone, res))
+      );
   }
 
   /**
@@ -116,7 +106,7 @@ export class AuthInterceptor implements HttpInterceptor {
       return this.retryRequest(req, res);
     }
 
-    return _throw(res);
+    return throwError(res);
   }
 
   /**
@@ -126,24 +116,25 @@ export class AuthInterceptor implements HttpInterceptor {
     const authService: AuthService =
       this.injector.get<AuthService>(AUTH_SERVICE);
 
-    return first(map(
-      authService.getAccessToken(),
-      (token: string) => {
-        if (token) {
-          let setHeaders: { [name: string]: string | string[] };
+    return authService.getAccessToken()
+      .pipe(
+        map((token: string) => {
+          if (token) {
+            let setHeaders: { [name: string]: string | string[] };
 
-          if (typeof authService.getHeaders === 'function') {
-            setHeaders = authService.getHeaders(token);
-          } else {
-            setHeaders = { Authorization: `Bearer ${token}` };
+            if (typeof authService.getHeaders === 'function') {
+              setHeaders = authService.getHeaders(token);
+            } else {
+              setHeaders = { Authorization: `Bearer ${token}` };
+            }
+
+            return req.clone({ setHeaders });
           }
 
-          return req.clone({ setHeaders });
-        }
-
-        return req;
-      }
-    ));
+          return req;
+        }),
+        first()
+      );
   }
 
   /**
@@ -151,9 +142,11 @@ export class AuthInterceptor implements HttpInterceptor {
    * otherwise throw error
    */
   private delayRequest(req: HttpRequest<any>): Observable<HttpRequest<any>> {
-    return switchMap(
-      first(this.refreshSubject),
-      (status: boolean) => status ? this.addToken(req) : _throw(req)
+    return this.refreshSubject.pipe(
+      first(),
+      switchMap((status: boolean) =>
+        status ? this.addToken(req) : throwError(req)
+      )
     );
   }
 
@@ -168,9 +161,11 @@ export class AuthInterceptor implements HttpInterceptor {
     const http: HttpClient =
       this.injector.get<HttpClient>(HttpClient);
 
-    return switchMap(
-      first(this.refreshSubject),
-      (status: boolean) => status ? http.request(req) : _throw(res || req)
+    return this.refreshSubject.pipe(
+      first(),
+      switchMap((status: boolean) =>
+        status ? http.request(req) : throwError(res || req)
+      )
     );
   }
 

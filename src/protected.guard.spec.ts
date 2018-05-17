@@ -1,6 +1,6 @@
 import { TestBed, inject, async } from '@angular/core/testing';
 import { Router, RouterStateSnapshot } from '@angular/router';
-import { of as ObservableOf } from 'rxjs/observable/of';
+import { of } from 'rxjs';
 
 import { AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI } from './tokens';
 import { AuthService } from './auth.service';
@@ -35,7 +35,7 @@ describe('ProtectedGuard', () => {
 
   beforeEach(inject(
     [ProtectedGuard, Router, AUTH_SERVICE],
-    (_authGuard: ProtectedGuard, _router: Router, _authService: AuthService ) => {
+    (_authGuard: ProtectedGuard, _router: Router, _authService: AuthService) => {
       protectedGuard = _authGuard;
       router = _router;
       authService = _authService;
@@ -49,14 +49,14 @@ describe('ProtectedGuard', () => {
   });
 
   it('should not activate auth route for a not authenticated user', async(() => {
-    spyOn(authService, 'isAuthorized').and.returnValue( ObservableOf(false) );
+    spyOn(authService, 'isAuthorized').and.returnValue(of(false));
 
     protectedGuard
       .canActivate(null, <RouterStateSnapshot>{ url: DASHBOARD_PAGE })
       .subscribe(
         status => {
           expect(status).toBeFalsy();
-          expect(router.navigateByUrl).toHaveBeenCalledWith( LOGIN_PAGE );
+          expect(router.navigateByUrl).toHaveBeenCalledWith(LOGIN_PAGE);
         },
         () => {
           throw new Error('should not be called');
@@ -65,7 +65,7 @@ describe('ProtectedGuard', () => {
   }));
 
   it('should activate auth route for authenticated user', async(() => {
-    spyOn(authService, 'isAuthorized').and.returnValue( ObservableOf(true) );
+    spyOn(authService, 'isAuthorized').and.returnValue(of(true));
 
     protectedGuard
       .canActivate(null, <RouterStateSnapshot>{ url: DASHBOARD_PAGE })
