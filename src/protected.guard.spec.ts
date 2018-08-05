@@ -80,4 +80,19 @@ describe('ProtectedGuard', () => {
       );
   }));
 
+  it('should fill the interrupted URL before user gets redirected to the ', async(() => {
+    spyOn(authService, 'isAuthorized').and.returnValue(of(false));
+
+    expect(protectedGuard.lastInterruptedUrl).toBe(undefined);
+
+    protectedGuard
+      .canActivate(null, <RouterStateSnapshot>{ url: DASHBOARD_PAGE })
+      .subscribe(
+        () => expect(protectedGuard.lastInterruptedUrl).toBe(DASHBOARD_PAGE),
+        () => {
+          throw new Error('should not be called');
+        }
+      );
+  }));
+
 });
