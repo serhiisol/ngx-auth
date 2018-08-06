@@ -24,7 +24,7 @@ import { AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI } from './tokens';
 export class ProtectedGuard implements CanActivate, CanActivateChild {
 
   constructor(
-    @Inject(AUTH_SERVICE)private authService: AuthService,
+    @Inject(AUTH_SERVICE) private authService: AuthService,
     @Inject(PUBLIC_FALLBACK_PAGE_URI) private publicFallbackPageUri: string,
     private router: Router
   ) {}
@@ -39,6 +39,7 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
     return this.authService.isAuthorized()
       .pipe(map((isAuthorized: boolean) => {
         if (!isAuthorized && !this.isPublicPage(state)) {
+          this.authService.lastInterruptedUrl = state.url;
           this.navigate(this.publicFallbackPageUri);
 
           return false;

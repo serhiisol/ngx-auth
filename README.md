@@ -24,7 +24,7 @@ Full example you can find in this repo [serhiisol/ngx-auth-example](https://gith
 Authentication modules provides ability to attach authentication token automatically to the headers
 (through http interceptors), refresh token functionality, guards for protected or public pages and more.
 
-#### Usage
+### Usage
 
 1. Import ```AuthService``` interface to implement it with your custom Authentication service, e.g.:
 
@@ -33,6 +33,8 @@ import { AuthService } from 'ngx-auth';
 
 @Injectable()
 export class AuthenticationService implements AuthService {
+
+  public lastInterruptedUrl: string;
 
   constructor(private http: Http) {}
 
@@ -127,3 +129,28 @@ by ```ProtectedGuard``` and won't be authenticated
 ### Customizing authentication headers
 
 By default, requests are intercepted and a ```{ Authorization: 'Bearer ${token}'}``` header is injected. To customize this behavior, implement the ```getHeaders``` method on your ```AuthenticationService```
+
+### After login redirect to the interrupted URL
+
+The `AuthService` has a property `lastInterruptedURL` which stores the URL that was requested before the user is redirected to the login page. This property can be used in order to redirect the user to the originally requested page after he logs in. E.g. in your `login.component.ts`:
+
+```ts
+@Component({
+  selector: 'app-login',
+  templateUrl: './login.component.html'
+})
+export class LoginComponent {
+
+  constructor(
+    private router: Router,
+    private authService: AuthenticationService,
+  ) { }
+
+  public login() {
+    this.authService
+      .login()
+      .subscribe(() => this.router.navigateByUrl(this.authService.lastInterruptedUrl));
+  }
+
+}
+```
