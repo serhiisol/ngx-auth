@@ -7,6 +7,8 @@ import { Observable } from 'rxjs';
  */
 export abstract class AuthService {
 
+  public abstract lastInterruptedUrl?: string;
+
   /**
    * Check, if user already authorized.
    *

@@ -130,7 +130,7 @@ By default, requests are intercepted and a ```{ Authorization: 'Bearer ${token}'
 
 ### After login redirect to the interrupted URL
 
-The `ProtectedGuard` has a property `lastInterruptedURL` which stores the URL that was requested before the user is redirected to the login page. This property can be used in order to redirect the user to the originally requested page after he logs in. E.g. in your `login.component.ts`:
+The `AuthService` has a property `lastInterruptedURL` which stores the URL that was requested before the user is redirected to the login page. This property can be used in order to redirect the user to the originally requested page after he logs in. E.g. in your `login.component.ts`:
 
 ```ts
 @Component({
@@ -142,13 +142,12 @@ export class LoginComponent {
   constructor(
     private router: Router,
     private authService: AuthenticationService,
-    private protectedGuard: ProtectedGuard,
   ) { }
 
   public login() {
     this.authService
       .login()
-      .subscribe(() => this.router.navigateByUrl(this.protectedGuard.lastInterruptedUrl));
+      .subscribe(() => this.router.navigateByUrl(this.authService.lastInterruptedUrl));
   }
 
 }
