@@ -34,6 +34,8 @@ import { AuthService } from 'ngx-auth';
 @Injectable()
 export class AuthenticationService implements AuthService {
 
+  public lastInterruptedUrl: string;
+
   constructor(private http: Http) {}
 
   public isAuthorized(): Observable<boolean> {
