@@ -34,6 +34,8 @@ import { AuthService } from 'ngx-auth';
 @Injectable()
 export class AuthenticationService implements AuthService {
 
+  private interruptedUrl: string;
+
   constructor(private http: Http) {}
 
   public isAuthorized(): Observable<boolean> {
@@ -62,6 +64,14 @@ export class AuthenticationService implements AuthService {
 
   public verifyTokenRequest(url: string): boolean {
     return url.endsWith('refresh-token');
+  }
+
+  public getInterruptedUrl(): string {
+    return this.interruptedUrl;
+  }
+
+  public setInterruptedUrl(url: string): void {
+    this.interruptedUrl = url;
   }
 
 }
@@ -100,12 +110,12 @@ import { AuthModule, AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI, PROTECTED_FALLBACK_
 import { AuthenticationService } from './authentication.service';
 
 @NgModule({
-    imports: [ AuthModule ],
-    providers: [
-      { provide: PROTECTED_FALLBACK_PAGE_URI, useValue: '/' },
-      { provide: PUBLIC_FALLBACK_PAGE_URI, useValue: '/login' },
-      { provide: AUTH_SERVICE, useClass: AuthenticationService }
-    ]
+  imports: [ AuthModule ],
+  providers: [
+    { provide: PROTECTED_FALLBACK_PAGE_URI, useValue: '/' },
+    { provide: PUBLIC_FALLBACK_PAGE_URI, useValue: '/login' },
+    { provide: AUTH_SERVICE, useClass: AuthenticationService }
+  ]
 })
 export class AuthenticationModule {
 
@@ -127,3 +137,29 @@ by ```ProtectedGuard``` and won't be authenticated
 ### Customizing authentication headers
 
 By default, requests are intercepted and a ```{ Authorization: 'Bearer ${token}'}``` header is injected. To customize this behavior, implement the ```getHeaders``` method on your ```AuthenticationService```
+
+### After login redirect to the interrupted URL
+
+The `AuthService` has an optional method `setInterruptedUrl` which saves the URL that was requested before the user is redirected to the login page. This property can be used in order to redirect the user to the originally requested page after he logs in. E.g. in your `login.component.ts` (check also `AuthService` implementation above):
+
+```typescript
+@Component({
+  selector: 'app-login',
+  templateUrl: './login.component.html'
+})
+export class LoginComponent {
+
+  constructor(
+    private router: Router,
+    private authService: AuthenticationService,
+  ) { }
+
+  public login() {
+    this.authService
+      .login()
+      .subscribe(() =>
+        this.router.navigateByUrl(this.authService.getInterruptedUrl())
+      );
+  }
+}
+```
