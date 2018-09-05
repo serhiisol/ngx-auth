@@ -56,8 +56,6 @@ export abstract class AuthService {
   /**
    * Saves last interrupted url inside of the service for further reusage,
    * e.g. restoring interrupted page after logging in
-   *
-   * @param {string} url
    */
   public abstract setInterruptedUrl?(url: string): void;
 }
