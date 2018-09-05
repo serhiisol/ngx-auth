@@ -11,7 +11,8 @@ const RouterStub = {
 };
 
 const AuthenticationServiceStub = {
-  isAuthorized() {}
+  isAuthorized() {},
+  setInterruptedUrl() {}
 };
 
 const LOGIN_PAGE = '/login';
@@ -74,6 +75,20 @@ describe('ProtectedGuard', () => {
           expect(status).toBeTruthy();
           expect(router.navigateByUrl).not.toHaveBeenCalled();
         },
+        () => {
+          throw new Error('should not be called');
+        }
+      );
+  }));
+
+  it('should set the interrupted URL before user gets redirected to the fallback page', async(() => {
+    spyOn(authService, 'isAuthorized').and.returnValue(of(false));
+    spyOn(authService, 'setInterruptedUrl');
+
+    protectedGuard
+      .canActivate(null, <RouterStateSnapshot>{ url: DASHBOARD_PAGE })
+      .subscribe(
+        () => expect(authService.setInterruptedUrl).toHaveBeenCalledWith(DASHBOARD_PAGE),
         () => {
           throw new Error('should not be called');
         }

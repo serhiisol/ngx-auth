@@ -39,6 +39,10 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
     return this.authService.isAuthorized()
       .pipe(map((isAuthorized: boolean) => {
         if (!isAuthorized && !this.isPublicPage(state)) {
+          if (this.authService.setInterruptedUrl) {
+            this.authService.setInterruptedUrl(state.url);
+          }
+
           this.navigate(this.publicFallbackPageUri);
 
           return false;
