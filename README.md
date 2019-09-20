@@ -6,20 +6,7 @@ This package provides authentication module with interceptor
 npm install ngx-auth --save
 ```
 
-Note: If you want to use library for angular 6, use version 4.1.0
-```
-npm install ngx-auth@4.1.0 --save
-```
-
-Note: If you want to use library for angular 5, use version 3.1.0
-```
-npm install ngx-auth@3.1.0 --save
-```
-
-Note: If you want to use library for angular 4, use version 2.2.0
-```
-npm install ngx-auth@2.2.0 --save
-```
+For older versions of angular see [Older Versions](#older-versions) section.
 
 ## Full example
 Full example you can find in this repo [serhiisol/ngx-auth-example](https://github.com/serhiisol/ngx-auth-example)
@@ -44,19 +31,19 @@ export class AuthenticationService implements AuthService {
   constructor(private http: Http) {}
 
   public isAuthorized(): Observable<boolean> {
-    const isAuthorized: boolean = !!localStorage.getItem('accessToken');
+    const isAuthorized: boolean = !!sessionStorage.getItem('accessToken');
 
     return Observable.of(isAuthorized);
   }
 
   public getAccessToken(): Observable<string> {
-    const accessToken: string = localStorage.getItem('accessToken');
+    const accessToken: string = sessionStorage.getItem('accessToken');
 
     return Observable.of(accessToken);
   }
 
   public refreshToken(): Observable<any> {
-    const refreshToken: string = localStorage.getItem('refreshToken');
+    const refreshToken: string = sessionStorage.getItem('refreshToken');
 
     return this.http
       .post('http://localhost:3001/refresh-token', { refreshToken })
@@ -67,8 +54,12 @@ export class AuthenticationService implements AuthService {
     return response.status === 401;
   }
 
-  public verifyTokenRequest(url: string): boolean {
-    return url.endsWith('refresh-token');
+  public verifyRefreshToken(req: HttpRequest<any>): boolean {
+    return req.url.endsWith('refresh-token');
+  }
+
+  public skipRequest(req: HttpRequest<any>): boolean {
+    return req.url.endsWith('third-party-request');
   }
 
   public getInterruptedUrl(): string {
@@ -167,4 +158,20 @@ export class LoginComponent {
       );
   }
 }
+```
+
+## Older Versions
+For angular 6, use version 4.1.0
+```
+npm install ngx-auth@4.1.0 --save
+```
+
+For angular 5, use version 3.1.0
+```
+npm install ngx-auth@3.1.0 --save
+```
+
+For angular 4, use version 2.2.0
+```
+npm install ngx-auth@2.2.0 --save
 ```

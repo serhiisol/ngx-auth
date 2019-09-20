@@ -2,7 +2,8 @@ import { TestBed, inject, fakeAsync, tick } from '@angular/core/testing';
 import {
   HttpClient,
   HTTP_INTERCEPTORS,
-  HttpErrorResponse
+  HttpErrorResponse,
+  HttpRequest
 } from '@angular/common/http';
 import {
   HttpClientTestingModule,
@@ -16,6 +17,7 @@ import { AuthInterceptor } from './auth.interceptor';
 
 const TEST_URI = 'TEST_URI';
 const TEST_URI2 = 'TEST_URI_2';
+const TEST_SKIP_URI = 'TEST_SKIP_URI';
 const TEST_REFRESH_URI = 'TEST_REFRESH_URI';
 const TEST_TOKEN = 'TEST_TOKEN';
 
@@ -42,8 +44,11 @@ class AuthenticationServiceStub implements AuthService {
   refreshShouldHappen(e: HttpErrorResponse) {
     return e.status === 401;
   }
-  verifyTokenRequest(url: string) {
-    return url === TEST_REFRESH_URI;
+  verifyRefreshToken(req: HttpRequest<any>) {
+    return req.url === TEST_REFRESH_URI;
+  }
+  skipRequest(req: HttpRequest<any>) {
+    return req.url === TEST_SKIP_URI;
   }
 }
 
@@ -93,6 +98,19 @@ describe('AuthInterceptor', () => {
 
       expect(req.request.url).toBe(TEST_URI);
       expect(req.request.headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
+
+      req.flush({name: 'Test_Data'});
+    });
+
+    it('should skip process for some cases', () => {
+      http.get(TEST_SKIP_URI).subscribe(data => {
+        expect(data).toEqual({ name: 'Test_Data' });
+      }, fail);
+
+      const req = controller.expectOne(TEST_SKIP_URI);
+
+      expect(req.request.url).toBe(TEST_SKIP_URI);
+      expect(req.request.headers.get('Authorization')).not.toBe(`Bearer ${TEST_TOKEN}`);
 
       req.flush({name: 'Test_Data'});
     });

@@ -35,10 +35,7 @@ export class AuthInterceptor implements HttpInterceptor {
     req: HttpRequest<any>,
     delegate: HttpHandler
   ): Observable<HttpEvent<any>> {
-    const authService: AuthService =
-      this.injector.get<AuthService>(AUTH_SERVICE);
-
-    if (authService.verifyTokenRequest(req.url)) {
+    if (this.skipRequest(req)) {
       return delegate.handle(req);
     }
 
@@ -167,6 +164,32 @@ export class AuthInterceptor implements HttpInterceptor {
         status ? http.request(req) : throwError(res || req)
       )
     );
+  }
+
+  /**
+   * Checks if request must be skipped by interceptor.
+   */
+  private skipRequest(req: HttpRequest<any>) {
+    const skipRequest = this.exec('skipRequest', req);
+    const verifyRefreshToken = this.exec('verifyRefreshToken', req.url);
+
+    // deprecated, will be removed soon
+    const verifyTokenRequest = this.exec('verifyTokenRequest', req.url);
+
+    return skipRequest || verifyRefreshToken || verifyTokenRequest;
+  }
+
+  /**
+   * Exec optional method, will be removed in upcoming updates.
+   * Temp method until `verifyTokenRequest` will be completedy replaced with skipRequest
+   */
+  private exec(method: string, ...args: any[]) {
+    const authService: AuthService =
+      this.injector.get<AuthService>(AUTH_SERVICE);
+
+    if (typeof authService[method] === 'function') {
+      return authService[method](...args);
+    }
   }
 
 }
