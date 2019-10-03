@@ -181,7 +181,7 @@ export class AuthInterceptor implements HttpInterceptor {
 
   /**
    * Exec optional method, will be removed in upcoming updates.
-   * Temp method until `verifyTokenRequest` will be completedy replaced with skipRequest
+   * Temp method until `verifyTokenRequest` will be completely replaced with skipRequest
    */
   private exec(method: string, ...args: any[]) {
     const authService: AuthService =
