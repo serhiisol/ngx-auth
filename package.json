@@ -1,6 +1,6 @@
 {
   "name": "ngx-auth",
-  "version": "5.2.0",
+  "version": "5.3.0",
   "description": "Angular 7+ Authentication module",
   "repository": "https://github.com/serhiisol/ngx-auth",
   "keywords": [

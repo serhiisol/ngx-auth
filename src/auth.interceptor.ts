@@ -171,7 +171,7 @@ export class AuthInterceptor implements HttpInterceptor {
    */
   private skipRequest(req: HttpRequest<any>) {
     const skipRequest = this.exec('skipRequest', req);
-    const verifyRefreshToken = this.exec('verifyRefreshToken', req.url);
+    const verifyRefreshToken = this.exec('verifyRefreshToken', req);
 
     // deprecated, will be removed soon
     const verifyTokenRequest = this.exec('verifyTokenRequest', req.url);
