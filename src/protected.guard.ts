@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Injectable, Inject } from '@angular/core';
 import {
   Router,
@@ -26,6 +27,7 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
   constructor(
     @Inject(AUTH_SERVICE)private authService: AuthService,
     @Inject(PUBLIC_FALLBACK_PAGE_URI) private publicFallbackPageUri: string,
+    @Inject(DOCUMENT) private readonly document: Document,
     private router: Router
   ) {}
 
@@ -74,7 +76,7 @@ export class ProtectedGuard implements CanActivate, CanActivateChild {
    */
   private navigate(url: string): void {
     if (url.startsWith('http')) {
-      window.location.href = url;
+      this.document.location.href = url;
     } else {
       this.router.navigateByUrl(url);
     }
