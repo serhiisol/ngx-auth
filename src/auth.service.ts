@@ -32,7 +32,7 @@ export abstract class AuthService {
    *
    * Essentially checks status
    */
-  public abstract refreshShouldHappen(response: HttpErrorResponse): boolean;
+  public abstract refreshShouldHappen(response: HttpErrorResponse, request?: HttpRequest<any>): boolean;
 
   /**
    * Verify that outgoing request is refresh-token,

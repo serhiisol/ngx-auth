@@ -80,7 +80,7 @@ export class AuthInterceptor implements HttpInterceptor {
     const authService: AuthService =
       this.injector.get<AuthService>(AUTH_SERVICE);
     const refreshShouldHappen: boolean =
-      authService.refreshShouldHappen(res);
+      authService.refreshShouldHappen(res, req);
 
     if (refreshShouldHappen && !this.refreshInProgress) {
       this.refreshInProgress = true;
