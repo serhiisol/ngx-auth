@@ -20,6 +20,7 @@ import { AUTH_SERVICE, PROTECTED_FALLBACK_PAGE_URI } from './tokens';
  * usage: { path: 'test', component: TestComponent, canActivate: [ PublicGuard ] }
  *
  * @export
+ * @dynamic
  */
 @Injectable()
 export class PublicGuard implements CanActivate, CanActivateChild {
