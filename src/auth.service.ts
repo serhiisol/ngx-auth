@@ -1,4 +1,4 @@
-import { HttpRequest, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 /**
@@ -10,21 +10,21 @@ export abstract class AuthService {
    * Check, if user already authorized.
    * Should return Observable with true or false values
    */
-  public abstract isAuthorized(): Observable<boolean>;
+  abstract isAuthorized(): Observable<boolean>;
 
   /**
    * Get access token
    * Should return access token in Observable from e.g.
    * localStorage
    */
-  public abstract getAccessToken(): Observable<string>;
+  abstract getAccessToken(): Observable<string | null>;
 
   /**
    * Function, that should perform refresh token
    * Should be successfully completed so interceptor
    * can execute pending requests or retry original one
    */
-  public abstract refreshToken(): Observable<any>;
+  abstract refreshToken(): Observable<any>;
 
   /**
    * Function, checks response of failed request to determine,
@@ -32,19 +32,19 @@ export abstract class AuthService {
    *
    * Essentially checks status
    */
-  public abstract refreshShouldHappen(response: HttpErrorResponse, request?: HttpRequest<any>): boolean;
+  abstract refreshShouldHappen(response: HttpErrorResponse, request?: HttpRequest<any>): boolean;
 
   /**
    * Verify that outgoing request is refresh-token,
    * so interceptor won't intercept this request
    */
-  public abstract verifyRefreshToken?(request: HttpRequest<any>): boolean;
+  abstract verifyRefreshToken?(request: HttpRequest<any>): boolean;
 
   /**
    * Checks if request must be skipped by interceptor.
    * Useful for requests such as request token which doesn't require token in headers
    */
-  public abstract skipRequest?(request: HttpRequest<any>): boolean;
+  abstract skipRequest?(request: HttpRequest<any>): boolean;
 
   /**
    * Add token to headers, dependent on server
@@ -52,19 +52,11 @@ export abstract class AuthService {
    * Called by interceptor.
    * To change behavior, override this method.
    */
-  public abstract getHeaders?(token: string): { [name: string]: string | string[] };
+  abstract getHeaders?(token: string): { [name: string]: string | string[]; };
 
   /**
    * Saves last interrupted url inside of the service for further reusage,
    * e.g. restoring interrupted page after logging in
    */
-  public abstract setInterruptedUrl?(url: string): void;
-
-  /**
-   * Verify that outgoing request is refresh-token,
-   * so interceptor won't intercept this request
-   * @deprecated Due to illogical meaning/functionality this method is deprecated
-   * @see verifyRefreshToken
-   */
-  public abstract verifyTokenRequest?(url: string): boolean;
+  abstract setInterruptedUrl?(url: string): void;
 }

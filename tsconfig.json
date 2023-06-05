@@ -2,23 +2,34 @@
   "compileOnSave": false,
   "compilerOptions": {
     "declaration": false,
+    "downlevelIteration": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "module": "es2015",
+    "forceConsistentCasingInFileNames": true,
+    "importHelpers": true,
+    "lib": [
+      "ES2022",
+      "dom"
+    ],
+    "module": "ES2022",
     "moduleResolution": "node",
     "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
     "noImplicitAny": false,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "rootDir": ".",
     "sourceMap": true,
-    "target": "es5",
-    "lib": ["es6", "dom"],
-    "typeRoots": [
-      "node_modules/@types"
-    ],
-    "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "strict": true,
+    "target": "ES2022",
+    "useDefineForClassFields": false
   },
   "include": [
-    "./src/**/*.ts"
+    "./src/index.ts",
+    "./src/**/*.spec.ts",
+    "./example/src/main.ts"
   ]
 }

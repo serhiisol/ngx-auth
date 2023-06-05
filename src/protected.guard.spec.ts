@@ -1,18 +1,18 @@
-import { TestBed, inject, async } from '@angular/core/testing';
+import { inject, TestBed, waitForAsync } from '@angular/core/testing';
 import { Router, RouterStateSnapshot } from '@angular/router';
 import { of } from 'rxjs';
 
-import { AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI } from './tokens';
 import { AuthService } from './auth.service';
 import { ProtectedGuard } from './protected.guard';
+import { AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI } from './tokens';
 
 const RouterStub = {
-  navigateByUrl() { }
+  navigateByUrl() { },
 };
 
 const AuthenticationServiceStub = {
-  isAuthorized() {},
-  setInterruptedUrl() {}
+  isAuthorized() { },
+  setInterruptedUrl() { },
 };
 
 const LOGIN_PAGE = '/login';
@@ -30,7 +30,7 @@ describe('ProtectedGuard', () => {
         { provide: Router, useValue: RouterStub },
         { provide: AUTH_SERVICE, useValue: AuthenticationServiceStub },
         { provide: PUBLIC_FALLBACK_PAGE_URI, useValue: LOGIN_PAGE },
-      ]
+      ],
     });
   });
 
@@ -40,59 +40,62 @@ describe('ProtectedGuard', () => {
       protectedGuard = _authGuard;
       router = _router;
       authService = _authService;
-
-      spyOn(router, 'navigateByUrl').and.callThrough();
     }
   ));
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(router, 'navigateByUrl');
+  });
 
   it('should instantiate guard', () => {
     expect(protectedGuard).toBeTruthy();
   });
 
-  it('should not activate auth route for a not authenticated user', async(() => {
-    spyOn(authService, 'isAuthorized').and.returnValue(of(false));
+  it('should not activate auth route for a not authenticated user', waitForAsync(() => {
+    jest.spyOn(authService, 'isAuthorized').mockReturnValue(of(false));
 
     protectedGuard
-      .canActivate(null, <RouterStateSnapshot>{ url: DASHBOARD_PAGE })
-      .subscribe(
-        status => {
+      .canActivate({ url: DASHBOARD_PAGE } as RouterStateSnapshot)
+      .subscribe({
+        next: status => {
           expect(status).toBeFalsy();
           expect(router.navigateByUrl).toHaveBeenCalledWith(LOGIN_PAGE);
         },
-        () => {
+        error: () => {
           throw new Error('should not be called');
-        }
-      );
+        },
+      });
   }));
 
-  it('should activate auth route for authenticated user', async(() => {
-    spyOn(authService, 'isAuthorized').and.returnValue(of(true));
+  it('should activate auth route for authenticated user', waitForAsync(() => {
+    jest.spyOn(authService, 'isAuthorized').mockReturnValue(of(true));
 
     protectedGuard
-      .canActivate(null, <RouterStateSnapshot>{ url: DASHBOARD_PAGE })
-      .subscribe(
-        status => {
+      .canActivate({ url: DASHBOARD_PAGE } as RouterStateSnapshot)
+      .subscribe({
+        next: status => {
           expect(status).toBeTruthy();
           expect(router.navigateByUrl).not.toHaveBeenCalled();
         },
-        () => {
+        error: () => {
           throw new Error('should not be called');
-        }
-      );
+        },
+      });
   }));
 
-  it('should set the interrupted URL before user gets redirected to the fallback page', async(() => {
-    spyOn(authService, 'isAuthorized').and.returnValue(of(false));
-    spyOn(authService, 'setInterruptedUrl');
+  it('should set the interrupted URL before user gets redirected to the fallback page', waitForAsync(() => {
+    jest.spyOn(authService, 'isAuthorized').mockReturnValue(of(false));
+    jest.spyOn(authService, 'setInterruptedUrl');
 
     protectedGuard
-      .canActivate(null, <RouterStateSnapshot>{ url: DASHBOARD_PAGE })
-      .subscribe(
-        () => expect(authService.setInterruptedUrl).toHaveBeenCalledWith(DASHBOARD_PAGE),
-        () => {
+      .canActivate({ url: DASHBOARD_PAGE } as RouterStateSnapshot)
+      .subscribe({
+        next: () => expect(authService.setInterruptedUrl).toHaveBeenCalledWith(DASHBOARD_PAGE),
+        error: () => {
           throw new Error('should not be called');
-        }
-      );
+        },
+      });
   }));
 
 });

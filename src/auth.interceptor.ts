@@ -1,14 +1,14 @@
-import { Injectable, Injector } from '@angular/core';
 import {
   HttpClient,
+  HttpErrorResponse,
   HttpEvent,
-  HttpInterceptor,
   HttpHandler,
+  HttpInterceptor,
   HttpRequest,
-  HttpErrorResponse
 } from '@angular/common/http';
-import { Subject, Observable, throwError } from 'rxjs';
-import { map, first, switchMap, catchError } from 'rxjs/operators';
+import { Inject, Injectable } from '@angular/core';
+import { Observable, Subject, throwError } from 'rxjs';
+import { catchError, first, map, switchMap } from 'rxjs/operators';
 
 import { AuthService } from './auth.service';
 import { AUTH_SERVICE } from './tokens';
@@ -26,16 +26,19 @@ export class AuthInterceptor implements HttpInterceptor {
    */
   private refreshSubject: Subject<boolean> = new Subject<boolean>();
 
-  constructor(private injector: Injector) {}
+  constructor(
+    @Inject(AUTH_SERVICE) private authService: AuthService,
+    private http: HttpClient,
+  ) { }
 
   /**
    * Intercept an outgoing `HttpRequest`
    */
-  public intercept(
+  intercept(
     req: HttpRequest<any>,
     delegate: HttpHandler
   ): Observable<HttpEvent<any>> {
-    if (this.skipRequest(req)) {
+    if (this.authService.skipRequest?.(req) || this.authService.verifyRefreshToken?.(req)) {
       return delegate.handle(req);
     }
 
@@ -77,60 +80,48 @@ export class AuthInterceptor implements HttpInterceptor {
     req: HttpRequest<any>,
     res: HttpErrorResponse
   ): Observable<HttpEvent<any>> {
-    const authService: AuthService =
-      this.injector.get<AuthService>(AUTH_SERVICE);
     const refreshShouldHappen: boolean =
-      authService.refreshShouldHappen(res, req);
+      this.authService.refreshShouldHappen(res, req);
 
     if (refreshShouldHappen && !this.refreshInProgress) {
       this.refreshInProgress = true;
 
-      authService
-        .refreshToken()
-        .subscribe(
-          () => {
+      this.authService.refreshToken()
+        .subscribe({
+          next: () => {
             this.refreshInProgress = false;
             this.refreshSubject.next(true);
           },
-          () => {
+          error: () => {
             this.refreshInProgress = false;
             this.refreshSubject.next(false);
-          }
-        );
+          },
+        });
     }
 
     if (refreshShouldHappen && this.refreshInProgress) {
       return this.retryRequest(req, res);
     }
 
-    return throwError(res);
+    return throwError(() => res);
   }
 
   /**
    * Add access token to headers or the request
    */
   private addToken(req: HttpRequest<any>): Observable<HttpRequest<any>> {
-    const authService: AuthService =
-      this.injector.get<AuthService>(AUTH_SERVICE);
-
-    return authService.getAccessToken()
+    return this.authService.getAccessToken()
       .pipe(
-        map((token: string) => {
+        first(),
+        map((token: string | null) => {
           if (token) {
-            let setHeaders: { [name: string]: string | string[] };
-
-            if (typeof authService.getHeaders === 'function') {
-              setHeaders = authService.getHeaders(token);
-            } else {
-              setHeaders = { Authorization: `Bearer ${token}` };
-            }
+            const setHeaders = this.authService.getHeaders?.(token) ?? { Authorization: `Bearer ${token}` };
 
             return req.clone({ setHeaders });
           }
 
           return req;
         }),
-        first()
       );
   }
 
@@ -142,7 +133,7 @@ export class AuthInterceptor implements HttpInterceptor {
     return this.refreshSubject.pipe(
       first(),
       switchMap((status: boolean) =>
-        status ? this.addToken(req) : throwError(req)
+        status ? this.addToken(req) : throwError(() => req)
       )
     );
   }
@@ -155,41 +146,11 @@ export class AuthInterceptor implements HttpInterceptor {
     req: HttpRequest<any>,
     res: HttpErrorResponse
   ): Observable<HttpEvent<any>> {
-    const http: HttpClient =
-      this.injector.get<HttpClient>(HttpClient);
-
     return this.refreshSubject.pipe(
       first(),
       switchMap((status: boolean) =>
-        status ? http.request(req) : throwError(res || req)
+        status ? this.http.request(req) : throwError(() => res || req)
       )
     );
   }
-
-  /**
-   * Checks if request must be skipped by interceptor.
-   */
-  private skipRequest(req: HttpRequest<any>) {
-    const skipRequest = this.exec('skipRequest', req);
-    const verifyRefreshToken = this.exec('verifyRefreshToken', req);
-
-    // deprecated, will be removed soon
-    const verifyTokenRequest = this.exec('verifyTokenRequest', req.url);
-
-    return skipRequest || verifyRefreshToken || verifyTokenRequest;
-  }
-
-  /**
-   * Exec optional method, will be removed in upcoming updates.
-   * Temp method until `verifyTokenRequest` will be completely replaced with skipRequest
-   */
-  private exec(method: string, ...args: any[]) {
-    const authService: AuthService =
-      this.injector.get<AuthService>(AUTH_SERVICE);
-
-    if (typeof authService[method] === 'function') {
-      return authService[method](...args);
-    }
-  }
-
 }

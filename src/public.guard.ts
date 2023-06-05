@@ -1,12 +1,6 @@
 import { DOCUMENT } from '@angular/common';
-import { Injectable, Inject } from '@angular/core';
-import {
-  CanActivate,
-  CanActivateChild,
-  Router,
-  ActivatedRouteSnapshot,
-  RouterStateSnapshot
-} from '@angular/router';
+import { Inject, inject, Injectable } from '@angular/core';
+import { ActivatedRouteSnapshot, CanActivateFn, Router, RouterStateSnapshot } from '@angular/router';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -17,28 +11,21 @@ import { AUTH_SERVICE, PROTECTED_FALLBACK_PAGE_URI } from './tokens';
  * Guard, checks access token availability and allows or disallows access to page,
  * and redirects out
  *
- * usage: { path: 'test', component: TestComponent, canActivate: [ PublicGuard ] }
- *
- * @export
- * @dynamic
+ * @deprecated see publicGuard function
  */
 @Injectable()
-export class PublicGuard implements CanActivate, CanActivateChild {
-
+export class PublicGuard {
   constructor(
     @Inject(AUTH_SERVICE) private authService: AuthService,
     @Inject(PROTECTED_FALLBACK_PAGE_URI) private protectedFallbackPageUri: string,
     @Inject(DOCUMENT) private readonly document: Document,
     private router: Router
-  ) {}
+  ) { }
 
   /**
    * CanActivate handler
    */
-  public canActivate(
-    _route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot
-  ): Observable<boolean> {
+  canActivate(state: RouterStateSnapshot): Observable<boolean> {
     return this.authService.isAuthorized()
       .pipe(map((isAuthorized: boolean) => {
         if (isAuthorized && !this.isProtectedPage(state)) {
@@ -49,16 +36,6 @@ export class PublicGuard implements CanActivate, CanActivateChild {
 
         return true;
       }));
-  }
-
-  /**
-   * CanActivateChild handler
-   */
-  public canActivateChild(
-    route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot
-  ): Observable<boolean> {
-    return this.canActivate(route, state);
   }
 
   /**
@@ -78,5 +55,10 @@ export class PublicGuard implements CanActivate, CanActivateChild {
       this.router.navigateByUrl(url);
     }
   }
-
 }
+
+export const publicGuard: CanActivateFn = (_route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
+  const guard = inject(PublicGuard);
+
+  return guard.canActivate(state);
+};
