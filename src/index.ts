@@ -1,7 +1,7 @@
 export { AuthModule } from './auth.module';
 export { AuthService } from './auth.service';
-export { ProtectedGuard, protectedGuard } from './protected.guard';
-export { PublicGuard, publicGuard } from './public.guard';
+export { protectedGuard } from './protected.guard';
+export { publicGuard } from './public.guard';
 export {
   AUTH_SERVICE,
   PROTECTED_FALLBACK_PAGE_URI,

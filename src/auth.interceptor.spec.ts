@@ -49,7 +49,7 @@ class AuthenticationServiceStub implements AuthService {
   }
 }
 
-describe.only('AuthInterceptor', () => {
+describe('AuthInterceptor', () => {
   let http: HttpClient;
   let service: AuthService;
   let controller: HttpTestingController;

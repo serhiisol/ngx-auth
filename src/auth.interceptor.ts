@@ -38,7 +38,7 @@ export class AuthInterceptor implements HttpInterceptor {
     req: HttpRequest<any>,
     delegate: HttpHandler
   ): Observable<HttpEvent<any>> {
-    if (this.authService.skipRequest?.(req) || this.authService.verifyRefreshToken?.(req)) {
+    if (this.skipRequest(req)) {
       return delegate.handle(req);
     }
 
@@ -115,9 +115,9 @@ export class AuthInterceptor implements HttpInterceptor {
         first(),
         map((token: string | null) => {
           if (token) {
-            const setHeaders = this.authService.getHeaders?.(token) ?? { Authorization: `Bearer ${token}` };
-
-            return req.clone({ setHeaders });
+            return req.clone({
+              setHeaders: this.authService.getHeaders?.(token) ?? { Authorization: `Bearer ${token}` },
+            });
           }
 
           return req;
@@ -152,5 +152,12 @@ export class AuthInterceptor implements HttpInterceptor {
         status ? this.http.request(req) : throwError(() => res || req)
       )
     );
+  }
+
+  /**
+   * Checks if request must be skipped by interceptor.
+   */
+  private skipRequest(req: HttpRequest<any>,) {
+    return this.authService.skipRequest?.(req) || this.authService.verifyRefreshToken?.(req);
   }
 }

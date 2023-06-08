@@ -91,8 +91,6 @@ const routes: Routes = [
 ];
 ```
 
-Note: `PublicGuard` and `ProtectedGuard` classes are deprecated (angular deprected CanActivate Guards).
-
 2. Create additional `AuthenticationModule` and provide important providers and imports, e.g.:
 
 ```typescript

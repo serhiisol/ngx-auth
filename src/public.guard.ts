@@ -10,8 +10,6 @@ import { AUTH_SERVICE, PROTECTED_FALLBACK_PAGE_URI } from './tokens';
 /**
  * Guard, checks access token availability and allows or disallows access to page,
  * and redirects out
- *
- * @deprecated see publicGuard function
  */
 @Injectable()
 export class PublicGuard {
