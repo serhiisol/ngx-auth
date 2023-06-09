@@ -1,4 +1,4 @@
-# Angular 7+ Authentication
+# Angular 16+ Authentication
 
 This package provides authentication module with interceptor
 
@@ -9,7 +9,7 @@ npm install ngx-auth --save
 For older versions of angular see [Older Versions](#older-versions) section.
 
 ## Full example
-Full example you can find in this repo [serhiisol/ngx-auth-example](https://github.com/serhiisol/ngx-auth-example)
+Full example you can find in the [example folder](example).
 
 ## Authentication module
 
@@ -18,86 +18,80 @@ Authentication modules provides ability to attach authentication token automatic
 
 #### Usage
 
-1. Import ```AuthService``` interface to implement it with your custom Authentication service, e.g.:
+1. Import `AuthService` interface to implement it with your custom Authentication service, e.g.:
 
 ```typescript
 import { AuthService } from 'ngx-auth';
 
 @Injectable()
 export class AuthenticationService implements AuthService {
-
   private interruptedUrl: string;
 
   constructor(private http: Http) {}
 
-  public isAuthorized(): Observable<boolean> {
-    const isAuthorized: boolean = !!sessionStorage.getItem('accessToken');
+  isAuthorized() {
+    const isAuthorized = !!sessionStorage.getItem('accessToken');
 
-    return Observable.of(isAuthorized);
+    return of(isAuthorized);
   }
 
-  public getAccessToken(): Observable<string> {
-    const accessToken: string = sessionStorage.getItem('accessToken');
+  getAccessToken() {
+    const accessToken = sessionStorage.getItem('accessToken');
 
-    return Observable.of(accessToken);
+    return of(accessToken);
   }
 
-  public refreshToken(): Observable<any> {
-    const refreshToken: string = sessionStorage.getItem('refreshToken');
+  refreshToken(): Observable<any> {
+    const refreshToken = sessionStorage.getItem('refreshToken');
 
     return this.http
       .post('http://localhost:3001/refresh-token', { refreshToken })
       .catch(() => this.logout())
   }
 
-  public refreshShouldHappen(response: HttpErrorResponse): boolean {
+  refreshShouldHappen(response: HttpErrorResponse) {
     return response.status === 401;
   }
 
-  public verifyRefreshToken(req: HttpRequest<any>): boolean {
+  verifyRefreshToken(req: HttpRequest<any>) {
     return req.url.endsWith('refresh-token');
   }
 
-  public skipRequest(req: HttpRequest<any>): boolean {
+  skipRequest(req: HttpRequest<any>) {
     return req.url.endsWith('third-party-request');
   }
 
-  public getInterruptedUrl(): string {
+  getInterruptedUrl() {
     return this.interruptedUrl;
   }
 
-  public setInterruptedUrl(url: string): void {
+  setInterruptedUrl(url: string) {
     this.interruptedUrl = url;
   }
 
 }
 ```
 
-2. Specify ```PublicGuard``` for public routes and ```ProtectedGuard``` for protected respectively, e.g.:
+2. Specify functions `publicGuard` for public routes and `protectedGuard` for protected respectively, e.g.:
 
 ```typescript
-const publicRoutes: Routes = [
+const routes: Routes = [
   {
     path: '',
-    component: LoginComponent,
-    canActivate: [ PublicGuard ]
-  }
-];
-```
-```typescript
-const protectedRoutes: Routes = [
+    component: PublicComponent,
+    canActivate: [publicGuard],
+    children: [/*...*/],
+  },
   {
     path: '',
     component: ProtectedComponent,
-    canActivate: [ ProtectedGuard ],
-    children: [
-      { path: 'dashboard', loadChildren: './dashboard/dashboard.module#DashboardModule' }
-    ]
+    canActivate: [protectedGuard],
+    children: [/*...*/],
   }
 ];
 ```
 
-2. Create additional ```AuthenticationModule``` and provide important providers and imports, e.g.:
+2. Create additional `AuthenticationModule` and provide important providers and imports, e.g.:
 
 ```typescript
 import { NgModule } from '@angular/core';
@@ -113,26 +107,23 @@ import { AuthenticationService } from './authentication.service';
     { provide: AUTH_SERVICE, useClass: AuthenticationService }
   ]
 })
-export class AuthenticationModule {
-
-}
-
+export class AuthenticationModule { }
 ```
 
 where,
-* ```PROTECTED_FALLBACK_PAGE_URI``` - main protected page to be redirected to, in case if user will reach public route, that is protected
-by ```PublicGuard``` and will be authenticated
+* `PROTECTED_FALLBACK_PAGE_URI` - main protected page to be redirected to, in case if user will reach public route, that is protected
+by `publicGuard` and will be authenticated
 
-* ```PUBLIC_FALLBACK_PAGE_URI``` - main public page to be redirected to, in case if user will reach protected route, that is protected
-by ```ProtectedGuard``` and won't be authenticated
+* `PUBLIC_FALLBACK_PAGE_URI` - main public page to be redirected to, in case if user will reach protected route, that is protected
+by `protectedGuard` and won't be authenticated
 
-* ```AUTH_SERVICE``` - Authentication service token providers
+* `AUTH_SERVICE` - Authentication service token providers
 
-3. Provide your ```AuthenticationModule``` in your ```AppModule```
+3. Provide your `AuthenticationModule` in your `AppModule`
 
 ### Customizing authentication headers
 
-By default, requests are intercepted and a ```{ Authorization: 'Bearer ${token}'}``` header is injected. To customize this behavior, implement the ```getHeaders``` method on your ```AuthenticationService```
+By default, requests are intercepted and a `{ Authorization: 'Bearer ${token}'}` header is injected. To customize this behavior, implement the `getHeaders` method on your `AuthenticationService`
 
 ### After login redirect to the interrupted URL
 
@@ -144,15 +135,8 @@ The `AuthService` has an optional method `setInterruptedUrl` which saves the URL
   templateUrl: './login.component.html'
 })
 export class LoginComponent {
-
-  constructor(
-    private router: Router,
-    private authService: AuthenticationService,
-  ) { }
-
-  public login() {
-    this.authService
-      .login()
+  login() {
+    this.authService.login()
       .subscribe(() =>
         this.router.navigateByUrl(this.authService.getInterruptedUrl())
       );
@@ -161,6 +145,11 @@ export class LoginComponent {
 ```
 
 ## Older Versions
+For angular 7-15, use version 5.4.0
+```
+npm install ngx-auth@5.4.0 --save
+```
+
 For angular 6, use version 4.1.0
 ```
 npm install ngx-auth@4.1.0 --save

@@ -1,9 +1,0 @@
-.editorconfig
-tsconfig.json
-
-karma.conf.js
-tsconfig.json
-tslint.json
-test.ts
-
-src/**/*.spec.ts
