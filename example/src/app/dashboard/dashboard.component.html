@@ -1,0 +1,21 @@
+<p>
+  This is protected area!
+</p>
+
+<h4>Data:</h4>
+
+<ul>
+  <li *ngFor="let item of data$ | async">
+    {{ item.name }}
+  </li>
+</ul>
+
+<p>
+  <button (click)="loadData()">
+    LoadData
+  </button>
+</p>
+
+<button (click)="logout()">
+  Logout
+</button>
