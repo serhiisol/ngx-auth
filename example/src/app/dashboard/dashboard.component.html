@@ -5,9 +5,9 @@
 <h4>Data:</h4>
 
 <ul>
-  <li *ngFor="let item of data$ | async">
-    {{ item.name }}
-  </li>
+  @for (item of data(); track item.name) {
+    <li>{{ item.name }}</li>
+  }
 </ul>
 
 <p>

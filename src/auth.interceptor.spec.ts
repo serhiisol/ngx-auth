@@ -1,19 +1,12 @@
-import {
-  HTTP_INTERCEPTORS,
-  HttpClient,
-  HttpErrorResponse,
-  HttpRequest,
-} from '@angular/common/http';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
-import { fakeAsync, inject, TestBed, tick } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { HttpClient, type HttpErrorResponse, type HttpRequest, provideHttpClient } from '@angular/common/http';
+import { withInterceptors } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { type Provider } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { firstValueFrom } from 'rxjs';
 
-import { AuthInterceptor } from './auth.interceptor';
-import { AuthService } from './auth.service';
-import { AUTH_SERVICE } from './tokens';
+import { ngxAuthInterceptor } from './auth.interceptor';
+import { AUTH_SERVICE, type NgxAuthService } from './auth.service';
 
 const TEST_URI = 'TEST_URI';
 const TEST_URI2 = 'TEST_URI_2';
@@ -21,79 +14,55 @@ const TEST_SKIP_URI = 'TEST_SKIP_URI';
 const TEST_REFRESH_URI = 'TEST_REFRESH_URI';
 const TEST_TOKEN = 'TEST_TOKEN';
 
-class AuthenticationServiceStub implements AuthService {
-  constructor(private http: HttpClient) { }
-
-  isAuthorized() {
-    return of(true);
-  }
-
-  getAccessToken() {
-    return of(TEST_TOKEN);
-  }
-
-  refreshToken() {
-    return this.http.get(TEST_REFRESH_URI);
-  }
-
-  refreshShouldHappen(e: HttpErrorResponse) {
-    return e.status === 401;
-  }
-
-  verifyRefreshToken(req: HttpRequest<any>) {
-    return req.url.startsWith(TEST_REFRESH_URI);
-  }
-
-  skipRequest(req: HttpRequest<any>) {
-    return req.url === TEST_SKIP_URI;
-  }
+function wait() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-describe('AuthInterceptor', () => {
+function authServiceFactory(http: HttpClient) {
+  return {
+    getAccessToken: jest.fn(() => Promise.resolve(TEST_TOKEN)),
+    isAuthenticated: jest.fn(() => true),
+    refreshShouldHappen: jest.fn((e: HttpErrorResponse) => e.status === 401),
+    refreshToken: jest.fn(() => http.get(TEST_REFRESH_URI)),
+    skipRequest: jest.fn((req: HttpRequest<any>) => req.url === TEST_SKIP_URI || req.url === TEST_REFRESH_URI),
+  };
+}
+
+describe('NgxAuthInterceptor', () => {
   let http: HttpClient;
-  let service: AuthService;
+  let service: NgxAuthService;
   let controller: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
       providers: [
+        provideHttpClient(
+          withInterceptors([ngxAuthInterceptor]),
+        ),
+        provideHttpClientTesting(),
         {
-          provide: AUTH_SERVICE,
           deps: [HttpClient],
-          useClass: AuthenticationServiceStub,
-        },
-        {
-          provide: HTTP_INTERCEPTORS,
-          useClass: AuthInterceptor,
-          multi: true,
-        },
+          provide: AUTH_SERVICE,
+          useFactory: authServiceFactory,
+        } as Provider,
       ],
     });
+
+    http = TestBed.inject(HttpClient);
+    controller = TestBed.inject(HttpTestingController);
+    service = TestBed.inject<NgxAuthService>(AUTH_SERVICE);
   });
 
-  beforeEach(inject(
-    [HttpClient, HttpTestingController, AUTH_SERVICE],
-    (
-      _http: HttpClient,
-      _controller: HttpTestingController,
-      _service: AuthService
-    ) => {
-      http = _http;
-      controller = _controller;
-      service = _service;
-    }
-  ));
+  afterEach(() => {
+    jest.resetAllMocks();
+    controller.verify();
+  });
 
   describe('with request', () => {
+    it('should pass request normally', async () => {
+      const request$ = firstValueFrom(http.get(TEST_URI));
 
-    it('should pass request normally', () => {
-      http.get(TEST_URI).subscribe({
-        next: data => {
-          expect(data).toEqual({ name: 'Test_Data' });
-        },
-        error: fail,
-      });
+      await wait();
 
       const req = controller.expectOne(TEST_URI);
 
@@ -101,15 +70,14 @@ describe('AuthInterceptor', () => {
       expect(req.request.headers.get('Authorization')).toBe(`Bearer ${TEST_TOKEN}`);
 
       req.flush({ name: 'Test_Data' });
+
+      expect(await request$).toEqual({ name: 'Test_Data' });
     });
 
-    it('should skip process for some cases', () => {
-      http.get(TEST_SKIP_URI).subscribe({
-        next: data => {
-          expect(data).toEqual({ name: 'Test_Data' });
-        },
-        error: fail,
-      });
+    it('should skip process for some cases', async () => {
+      const request$ = firstValueFrom(http.get(TEST_SKIP_URI));
+
+      await wait();
 
       const req = controller.expectOne(TEST_SKIP_URI);
 
@@ -117,194 +85,111 @@ describe('AuthInterceptor', () => {
       expect(req.request.headers.get('Authorization')).not.toBe(`Bearer ${TEST_TOKEN}`);
 
       req.flush({ name: 'Test_Data' });
-    });
 
+      expect(await request$).toEqual({ name: 'Test_Data' });
+    });
   });
 
   describe('with responseError', () => {
+    it('should throw error', async () => {
+      const request$ = firstValueFrom(http.get(TEST_URI));
 
-    it('should throw error', () => {
-      http.get(TEST_URI).subscribe({
-        next: fail,
-        error: e => {
-          expect(e.status).toBe(400);
-        },
-      });
+      await wait();
 
-      controller
-        .expectOne(TEST_URI)
+      controller.expectOne(TEST_URI)
         .error(new ProgressEvent('400'), { status: 400 });
+
+      try {
+        expect(await request$);
+        throw new Error('Request should have failed');
+      } catch (e) {
+        expect(e.status).toBe(400);
+      }
     });
 
-    it('should trigger refresh request after failed original request and retry original', fakeAsync(() => {
-      jest.spyOn(service, 'refreshToken');
+    it('should trigger refresh request after failed original request and retry original', async () => {
+      const request$ = firstValueFrom(http.get(TEST_URI));
 
-      http.get(TEST_URI).subscribe({
-        next: (data) => {
-          expect(data).toEqual({ name: 'Test_Data' });
-          expect(service.refreshToken).toHaveBeenCalled();
-        },
-        error: fail,
-      });
+      await wait();
 
-      controller
-        .expectOne(TEST_URI)
+      controller.expectOne(TEST_URI)
         .error(new ProgressEvent('401'), { status: 401 });
 
       controller.expectOne(TEST_REFRESH_URI).flush({});
-      controller
-        .expectOne(TEST_URI)
+
+      await wait();
+
+      controller.expectOne(TEST_URI)
         .flush({ name: 'Test_Data' });
 
-      tick(1000);
-    }));
+      expect(await request$).toEqual({ name: 'Test_Data' });
 
+      expect(service.refreshShouldHappen).toHaveBeenCalled();
+      expect(service.refreshToken).toHaveBeenCalled();
+    });
   });
 
   describe('with delaying', () => {
+    it('should delay and then retry requests if one of requests fails when refreshShouldHappen', async () => {
+      const request1$ = firstValueFrom(http.get(TEST_URI));
+      const request2$ = firstValueFrom(http.get(TEST_URI2));
 
-    it('should delay and then retry requests if one of requests fails when refreshShouldHappen', fakeAsync(() => {
-      jest.spyOn(service, 'refreshToken');
+      await wait();
 
-      http.get(TEST_URI).subscribe({
-        next: (data) => {
-          expect(data).toEqual({ name: 'Test_Data' });
-          expect(service.refreshToken).toHaveBeenCalled();
-        },
-        error: fail,
-      });
-
-      http.get(TEST_URI2).subscribe({
-        next: data => {
-          expect(data).toEqual({ name: 'Test_Data2' });
-        },
-        error: fail,
-      });
-
-      controller
-        .expectOne(TEST_URI)
+      controller.expectOne(TEST_URI)
         .error(new ProgressEvent('401'), { status: 401 });
 
-      tick(500);
-
-      controller
-        .expectOne(TEST_URI2)
+      controller.expectOne(TEST_URI2)
         .error(new ProgressEvent('401'), { status: 401 });
-
-      tick(500);
 
       controller.expectOne(TEST_REFRESH_URI).flush({});
-      controller
-        .expectOne(TEST_URI)
+
+      await wait();
+
+      controller.expectOne(TEST_URI)
         .flush({ name: 'Test_Data' });
 
-      controller
-        .expectOne(TEST_URI2)
+      controller.expectOne(TEST_URI2)
         .flush({ name: 'Test_Data2' });
 
-      controller.verify();
-    }));
+      expect(await request1$).toEqual({ name: 'Test_Data' });
+      expect(await request2$).toEqual({ name: 'Test_Data2' });
 
-    it('should delay upcoming requests if refresh is in progress', fakeAsync(() => {
-      jest.spyOn(service, 'refreshToken');
+      expect(service.refreshShouldHappen).toHaveBeenCalled();
+      expect(service.refreshToken).toHaveBeenCalled();
+    });
 
-      http.get(TEST_URI).subscribe({
-        next: (data) => {
-          expect(data).toEqual({ name: 'Test_Data' });
-          expect(service.refreshToken).toHaveBeenCalled();
-        },
-        error: fail,
-      });
+    it('should delay upcoming requests if refresh is in progress', async () => {
+      const request1$ = firstValueFrom(http.get(TEST_URI));
 
-      controller
-        .expectOne(TEST_URI)
+      await wait();
+
+      controller.expectOne(TEST_URI)
         .error(new ProgressEvent('401'), { status: 401 });
 
-      tick(500);
+      const request2$ = firstValueFrom(http.get(TEST_URI2));
 
-      http.get(TEST_URI2).subscribe({
-        next: data => {
-          expect(data).toEqual({ name: 'Test_Data2' });
-        },
-        error: fail,
-      });
+      await wait();
 
       // At this point second request is delayed and won't be registered in http
 
       controller.expectNone(TEST_URI2);
 
-      tick(500);
-
       controller.expectOne(TEST_REFRESH_URI).flush({});
-      controller
-        .expectOne(TEST_URI)
+
+      await wait();
+
+      controller.expectOne(TEST_URI)
         .flush({ name: 'Test_Data' });
 
-      controller
-        .expectOne(TEST_URI2)
+      controller.expectOne(TEST_URI2)
         .flush({ name: 'Test_Data2' });
 
-      controller.verify();
-    }));
+      expect(await request1$).toEqual({ name: 'Test_Data' });
+      expect(await request2$).toEqual({ name: 'Test_Data2' });
 
-  });
-
-});
-
-class CustomHeaderAuthenticationServiceStub extends AuthenticationServiceStub {
-  getHeaders(token: string): any {
-    return { 'x-auth-token': token };
-  }
-}
-
-describe('AuthInterceptor', () => {
-  let http: HttpClient;
-  let controller: HttpTestingController;
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [
-        {
-          provide: AUTH_SERVICE,
-          deps: [HttpClient],
-          useClass: CustomHeaderAuthenticationServiceStub,
-        },
-        {
-          provide: HTTP_INTERCEPTORS,
-          useClass: AuthInterceptor,
-          multi: true,
-        },
-      ],
+      expect(service.refreshShouldHappen).toHaveBeenCalled();
+      expect(service.refreshToken).toHaveBeenCalled();
     });
-  });
-
-  beforeEach(inject(
-    [HttpClient, HttpTestingController],
-    (
-      _http: HttpClient,
-      _controller: HttpTestingController
-    ) => {
-      http = _http;
-      controller = _controller;
-    }
-  ));
-
-  describe('with custom headers', () => {
-    it('should customize the authorization headers', () => {
-      http.get(TEST_URI).subscribe({
-        next: data => {
-          expect(data).toEqual({ name: 'Test_Data' });
-        },
-        error: fail,
-      });
-
-      const req = controller.expectOne(TEST_URI);
-
-      expect(req.request.headers.get('x-auth-token')).toBe(TEST_TOKEN);
-
-      req.flush({ name: 'Test_Data' });
-    });
-
   });
 });

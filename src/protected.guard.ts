@@ -1,64 +1,28 @@
-import { DOCUMENT } from '@angular/common';
-import { Inject, inject, Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivateFn, Router, RouterStateSnapshot } from '@angular/router';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { inject, InjectionToken } from '@angular/core';
+import { type ActivatedRouteSnapshot, type CanActivateFn, Router, type RouterStateSnapshot } from '@angular/router';
+import { from, tap } from 'rxjs';
 
-import { AuthService } from './auth.service';
-import { AUTH_SERVICE, PUBLIC_FALLBACK_PAGE_URI } from './tokens';
+import { AUTH_SERVICE } from './auth.service';
+
+export const PUBLIC_REDIRECT_URI = new InjectionToken<string>('ngx-auth--public-redirect-uri');
 
 /**
  * Guard, checks access token availability and allows or disallows access to page,
  * and redirects out
  */
-@Injectable()
-export class ProtectedGuard {
-  constructor(
-    @Inject(AUTH_SERVICE) private authService: AuthService,
-    @Inject(PUBLIC_FALLBACK_PAGE_URI) private publicFallbackPageUri: string,
-    @Inject(DOCUMENT) private readonly document: Document,
-    private router: Router
-  ) { }
+export const ngxProtectedGuard: CanActivateFn = (_: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
+  const authService = inject(AUTH_SERVICE);
+  const publicUri = inject(PUBLIC_REDIRECT_URI);
+  const router = inject(Router);
 
-  /**
-   * CanActivate handler
-   */
-  canActivate(state: RouterStateSnapshot): Observable<boolean> {
-    return this.authService.isAuthorized()
-      .pipe(map((isAuthorized: boolean) => {
-        if (!isAuthorized && !this.isPublicPage(state)) {
-          this.authService.setInterruptedUrl?.(state.url);
+  return from(authService.isAuthenticated()).pipe(
+    tap(async isAllowed => {
+      if (isAllowed) {
+        return;
+      }
 
-          this.navigate(this.publicFallbackPageUri);
-
-          return false;
-        }
-
-        return true;
-      }));
-  }
-
-  /**
-   * Check, if current page is fallback page
-   */
-  private isPublicPage(state: RouterStateSnapshot): boolean {
-    return state.url === this.publicFallbackPageUri;
-  }
-
-  /**
-   * Navigate away from the app / path
-   */
-  private navigate(url: string): void {
-    if (url.startsWith('http')) {
-      this.document.location.href = url;
-    } else {
-      this.router.navigateByUrl(url);
-    }
-  }
-}
-
-export const protectedGuard: CanActivateFn = (_route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
-  const guard = inject(ProtectedGuard);
-
-  return guard.canActivate(state);
+      authService.setInterruptedUrl?.(state.url);
+      await router.navigateByUrl(publicUri);
+    }),
+  );
 };
