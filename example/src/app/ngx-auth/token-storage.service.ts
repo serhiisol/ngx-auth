@@ -1,7 +1,12 @@
 import { Injectable } from '@angular/core';
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class TokenStorage {
+  clear() {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+  }
+
   getAccessToken() {
     return localStorage.getItem('accessToken');
   }
@@ -16,10 +21,5 @@ export class TokenStorage {
 
   setRefreshToken(token: string) {
     localStorage.setItem('refreshToken', token);
-  }
-
-  clear() {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
   }
 }

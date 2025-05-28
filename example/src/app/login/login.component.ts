@@ -1,20 +1,15 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, inject } from '@angular/core';
 
-import { AuthenticationService } from '../shared';
+import { AuthService } from '../ngx-auth';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
 })
 export class LoginComponent {
-  constructor(
-    private router: Router,
-    private authService: AuthenticationService
-  ) { }
+  private authService = inject(AuthService);
 
-  login() {
-    this.authService.login()
-      .subscribe(() => this.router.navigateByUrl('/'));
+  protected login() {
+    this.authService.login().subscribe();
   }
 }

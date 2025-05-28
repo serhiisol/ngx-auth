@@ -1,163 +1,99 @@
-import {
-  HttpClient,
-  HttpErrorResponse,
-  HttpEvent,
-  HttpHandler,
-  HttpInterceptor,
-  HttpRequest,
-} from '@angular/common/http';
-import { Inject, Injectable } from '@angular/core';
-import { Observable, Subject, throwError } from 'rxjs';
-import { catchError, first, map, switchMap } from 'rxjs/operators';
+import { HttpClient, type HttpErrorResponse, type HttpHandlerFn, type HttpInterceptorFn, type HttpRequest } from '@angular/common/http';
+import { inject, signal } from '@angular/core';
+import { catchError, first, from, map, Subject, switchMap, throwError } from 'rxjs';
 
-import { AuthService } from './auth.service';
-import { AUTH_SERVICE } from './tokens';
+import { AUTH_SERVICE, type NgxAuthService } from './auth.service';
 
-@Injectable()
-export class AuthInterceptor implements HttpInterceptor {
+export const NgxRefreshInProgress = signal(false);
+const delay$ = new Subject<boolean>();
 
-  /**
-   * Is refresh token is being executed
-   */
-  private refreshInProgress = false;
+export const ngxAuthInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
+  const authService = inject(AUTH_SERVICE);
+  const http = inject(HttpClient);
 
-  /**
-   * Notify all outstanding requests through this subject
-   */
-  private refreshSubject: Subject<boolean> = new Subject<boolean>();
-
-  constructor(
-    @Inject(AUTH_SERVICE) private authService: AuthService,
-    private http: HttpClient,
-  ) { }
-
-  /**
-   * Intercept an outgoing `HttpRequest`
-   */
-  intercept(
-    req: HttpRequest<any>,
-    delegate: HttpHandler
-  ): Observable<HttpEvent<any>> {
-    if (this.skipRequest(req)) {
-      return delegate.handle(req);
-    }
-
-    return this.processIntercept(req, delegate);
+  if (authService.skipRequest(req)) {
+    return next(req);
   }
 
-  /**
-   * Process all the requests via custom interceptors.
-   */
-  private processIntercept(
-    original: HttpRequest<any>,
-    delegate: HttpHandler
-  ): Observable<HttpEvent<any>> {
-    const clone: HttpRequest<any> = original.clone();
+  const request$ = NgxRefreshInProgress()
+    ? delayRequest(authService, req)
+    : addToken(authService, req);
 
-    return this.request(clone)
-      .pipe(
-        switchMap((req: HttpRequest<any>) => delegate.handle(req)),
-        catchError((res: HttpErrorResponse) => this.responseError(clone, res))
-      );
-  }
+  return request$.pipe(
+    switchMap(req => next(req)),
+    catchError(res => responseError(authService, http, req, res)),
+  );
+};
 
-  /**
-   * Request interceptor. Delays request if refresh is in progress
-   * otherwise adds token to the headers
-   */
-  private request(req: HttpRequest<any>): Observable<HttpRequest<any>> {
-    if (this.refreshInProgress) {
-      return this.delayRequest(req);
-    }
-
-    return this.addToken(req);
-  }
-
-  /**
-   * Failed request interceptor, check if it has to be processed with refresh
-   */
-  private responseError(
-    req: HttpRequest<any>,
-    res: HttpErrorResponse
-  ): Observable<HttpEvent<any>> {
-    const refreshShouldHappen: boolean =
-      this.authService.refreshShouldHappen(res, req);
-
-    if (refreshShouldHappen && !this.refreshInProgress) {
-      this.refreshInProgress = true;
-
-      this.authService.refreshToken()
-        .subscribe({
-          next: () => {
-            this.refreshInProgress = false;
-            this.refreshSubject.next(true);
-          },
-          error: () => {
-            this.refreshInProgress = false;
-            this.refreshSubject.next(false);
-          },
-        });
-    }
-
-    if (refreshShouldHappen && this.refreshInProgress) {
-      return this.retryRequest(req, res);
-    }
-
-    return throwError(() => res);
-  }
-
-  /**
-   * Add access token to headers or the request
-   */
-  private addToken(req: HttpRequest<any>): Observable<HttpRequest<any>> {
-    return this.authService.getAccessToken()
-      .pipe(
-        first(),
-        map((token: string | null) => {
-          if (token) {
-            return req.clone({
-              setHeaders: this.authService.getHeaders?.(token) ?? { Authorization: `Bearer ${token}` },
-            });
-          }
-
-          return req;
-        }),
-      );
-  }
-
-  /**
-   * Delay request, by subscribing on refresh event, once it finished, process it
-   * otherwise throw error
-   */
-  private delayRequest(req: HttpRequest<any>): Observable<HttpRequest<any>> {
-    return this.refreshSubject.pipe(
+/**
+ * Add access token to headers or the request
+ */
+function addToken(authService: NgxAuthService, req: HttpRequest<any>) {
+  return from(authService.getAccessToken())
+    .pipe(
       first(),
-      switchMap((status: boolean) =>
-        status ? this.addToken(req) : throwError(() => req)
-      )
+      map(token => {
+        if (token) {
+          return req.clone({
+            setHeaders: authService.getHeaders?.(token) ?? { Authorization: `Bearer ${token}` },
+          });
+        }
+
+        return req;
+      }),
+    );
+}
+
+/**
+ * Delay request, by subscribing on refresh event, once it finished, process it
+ * otherwise throw error
+ */
+function delayRequest(authService: NgxAuthService, req: HttpRequest<any>) {
+  return delay$.pipe(
+    first(),
+    switchMap(canDelay => canDelay
+      ? addToken(authService, req)
+      : throwError(() => req),
+    ),
+  );
+}
+
+/**
+ * Failed request interceptor, check if it has to be processed with refresh
+ */
+function responseError(
+  authService: NgxAuthService,
+  http: HttpClient,
+  req: HttpRequest<any>,
+  res: HttpErrorResponse,
+) {
+  const refreshShouldHappen = authService.refreshShouldHappen(res, req);
+
+  if (refreshShouldHappen && !NgxRefreshInProgress()) {
+    NgxRefreshInProgress.set(true);
+
+    from(authService.refreshToken())
+      .subscribe({
+        error: () => {
+          NgxRefreshInProgress.set(false);
+          delay$.next(false);
+        },
+        next: () => {
+          NgxRefreshInProgress.set(false);
+          delay$.next(true);
+        },
+      });
+  }
+
+  if (refreshShouldHappen && NgxRefreshInProgress()) {
+    return delay$.pipe(
+      first(),
+      switchMap(canRetry => canRetry
+        ? http.request(req)
+        : throwError(() => res || req),
+      ),
     );
   }
 
-  /**
-   * Retry request, by subscribing on refresh event, once it finished, process it
-   * otherwise throw error
-   */
-  private retryRequest(
-    req: HttpRequest<any>,
-    res: HttpErrorResponse
-  ): Observable<HttpEvent<any>> {
-    return this.refreshSubject.pipe(
-      first(),
-      switchMap((status: boolean) =>
-        status ? this.http.request(req) : throwError(() => res || req)
-      )
-    );
-  }
-
-  /**
-   * Checks if request must be skipped by interceptor.
-   */
-  private skipRequest(req: HttpRequest<any>,) {
-    return this.authService.skipRequest?.(req) || this.authService.verifyRefreshToken?.(req);
-  }
+  return throwError(() => res);
 }

@@ -1,28 +1,24 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Component, inject, signal } from '@angular/core';
 
-import { AuthenticationService, DataService } from '../shared';
+import { AuthService } from '../ngx-auth';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {
-  data$!: Observable<any>;
+  protected data = signal([]);
 
-  constructor(
-    private router: Router,
-    private dataService: DataService,
-    private authService: AuthenticationService
-  ) { }
+  private authService = inject(AuthService);
+  private http = inject(HttpClient);
 
-  loadData() {
-    this.data$ = this.dataService.getData();
+  protected loadData() {
+    this.http.get('http://localhost:3000/data')
+      .subscribe((data: any[]) => this.data.set(data));
   }
 
-  logout() {
-    this.authService.logout();
-    this.router.navigateByUrl('/');
+  protected async logout() {
+    await this.authService.logout();
   }
 }
