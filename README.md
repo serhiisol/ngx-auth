@@ -1,4 +1,4 @@
-# Angular 19+ Authentication
+# Angular 20+ Authentication
 
 This package provides authentication module with interceptor
 
@@ -29,7 +29,7 @@ The `NgxAuthService` has an optional method `setInterruptedUrl` which saves the 
 
 
 ## Older Versions
-For angular 16-18, use version 6.0.0
+For angular 16-19, use version 6.0.0
 ```
 npm install ngx-auth@5.4.0 --save
 ```
