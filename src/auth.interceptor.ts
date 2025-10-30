@@ -1,6 +1,6 @@
 import { HttpClient, type HttpErrorResponse, type HttpHandlerFn, type HttpInterceptorFn, type HttpRequest } from '@angular/common/http';
 import { inject, signal } from '@angular/core';
-import { catchError, first, from, map, Subject, switchMap, throwError } from 'rxjs';
+import { catchError, combineLatest, first, from, map, Subject, switchMap, throwError } from 'rxjs';
 
 import { AUTH_SERVICE, type NgxAuthService } from './auth.service';
 
@@ -67,33 +67,44 @@ function responseError(
   req: HttpRequest<any>,
   res: HttpErrorResponse,
 ) {
-  const refreshShouldHappen = authService.refreshShouldHappen(res, req);
+  const refreshShouldHappen$ = authService.refreshShouldHappen(res, req);
 
-  if (refreshShouldHappen && !NgxRefreshInProgress()) {
-    NgxRefreshInProgress.set(true);
+  return combineLatest([
+    from(typeof refreshShouldHappen$ === 'boolean'
+      ? Promise.resolve(refreshShouldHappen$)
+      : refreshShouldHappen$,
+    ),
+    from(authService.isAuthenticated()),
+  ])
+    .pipe(
+      switchMap(([refreshShouldHappen, isAuthenticated]) => {
+        if (refreshShouldHappen && isAuthenticated && !NgxRefreshInProgress()) {
+          NgxRefreshInProgress.set(true);
 
-    from(authService.refreshToken())
-      .subscribe({
-        error: () => {
-          NgxRefreshInProgress.set(false);
-          delay$.next(false);
-        },
-        next: () => {
-          NgxRefreshInProgress.set(false);
-          delay$.next(true);
-        },
-      });
-  }
+          from(authService.refreshToken())
+            .subscribe({
+              error: () => {
+                NgxRefreshInProgress.set(false);
+                delay$.next(false);
+              },
+              next: () => {
+                NgxRefreshInProgress.set(false);
+                delay$.next(true);
+              },
+            });
+        }
 
-  if (refreshShouldHappen && NgxRefreshInProgress()) {
-    return delay$.pipe(
-      first(),
-      switchMap(canRetry => canRetry
-        ? http.request(req)
-        : throwError(() => res || req),
-      ),
+        if (refreshShouldHappen && isAuthenticated && NgxRefreshInProgress()) {
+          return delay$.pipe(
+            first(),
+            switchMap(canRetry => canRetry
+              ? http.request(req)
+              : throwError(() => res || req),
+            ),
+          );
+        }
+
+        return throwError(() => res);
+      }),
     );
-  }
-
-  return throwError(() => res);
 }

@@ -21,7 +21,7 @@ function wait() {
 function authServiceFactory(http: HttpClient) {
   return {
     getAccessToken: jest.fn(() => Promise.resolve(TEST_TOKEN)),
-    isAuthenticated: jest.fn(() => true),
+    isAuthenticated: jest.fn(() => Promise.resolve(true)),
     refreshShouldHappen: jest.fn((e: HttpErrorResponse) => e.status === 401),
     refreshToken: jest.fn(() => http.get(TEST_REFRESH_URI)),
     skipRequest: jest.fn((req: HttpRequest<any>) => req.url === TEST_SKIP_URI || req.url === TEST_REFRESH_URI),
@@ -115,6 +115,8 @@ describe('NgxAuthInterceptor', () => {
       controller.expectOne(TEST_URI)
         .error(new ProgressEvent('401'), { status: 401 });
 
+      await wait();
+
       controller.expectOne(TEST_REFRESH_URI).flush({});
 
       await wait();
@@ -141,6 +143,8 @@ describe('NgxAuthInterceptor', () => {
 
       controller.expectOne(TEST_URI2)
         .error(new ProgressEvent('401'), { status: 401 });
+
+      await wait();
 
       controller.expectOne(TEST_REFRESH_URI).flush({});
 
@@ -169,11 +173,11 @@ describe('NgxAuthInterceptor', () => {
 
       const request2$ = firstValueFrom(http.get(TEST_URI2));
 
-      await wait();
-
       // At this point second request is delayed and won't be registered in http
 
       controller.expectNone(TEST_URI2);
+
+      await wait();
 
       controller.expectOne(TEST_REFRESH_URI).flush({});
 

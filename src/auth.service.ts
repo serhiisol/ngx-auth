@@ -33,7 +33,7 @@ export abstract class NgxAuthService {
    *
    * Essentially checks status
    */
-  abstract refreshShouldHappen(response: HttpErrorResponse, request?: HttpRequest<any>): boolean;
+  abstract refreshShouldHappen(response: HttpErrorResponse, request?: HttpRequest<any>): Promise<boolean> | Observable<boolean> | boolean;
 
   /**
    * Function, that should perform refresh token
